@@ -1,0 +1,792 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.9.0" type="baseline" client="gradle" dependencies="false" name="AGP (8.9.0)" variant="all" version="8.9.0">
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                                &quot;Average: ${String.format(&quot;%.1f&quot;, average)} mg/dL\n&quot; +"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/GlucoseReadWorker.kt"
+            line="125"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                        text = &quot;Average: ${String.format(&quot;%.1f&quot;, it)} mg/dL&quot;,"
+        errorLine2="                                           ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/GlucoseStatisticsScreen.kt"
+            line="362"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                            text = &quot;Min: ${String.format(&quot;%.1f&quot;, it)} mg/dL&quot;,"
+        errorLine2="                                           ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/GlucoseStatisticsScreen.kt"
+            line="374"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                            text = &quot;Max: ${String.format(&quot;%.1f&quot;, it)} mg/dL&quot;,"
+        errorLine2="                                           ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/GlucoseStatisticsScreen.kt"
+            line="381"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                                                text = &quot;Avg: ${String.format(&quot;%.1f&quot;, avgGlucose)} mg/dL&quot;,"
+        errorLine2="                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/HistoricalDataSection.kt"
+            line="216"
+            column="64"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                                                text = &quot;Range: ${String.format(&quot;%.1f&quot;, minGlucose)} - ${String.format(&quot;%.1f&quot;, maxGlucose)} mg/dL&quot;,"
+        errorLine2="                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/HistoricalDataSection.kt"
+            line="221"
+            column="66"/>
+    </issue>
+
+    <issue
+        id="DefaultLocale"
+        message="Implicitly using the default locale is a common source of bugs: Use `String.format(Locale, ...)` instead"
+        errorLine1="                                                text = &quot;Range: ${String.format(&quot;%.1f&quot;, minGlucose)} - ${String.format(&quot;%.1f&quot;, maxGlucose)} mg/dL&quot;,"
+        errorLine2="                                                                                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/HistoricalDataSection.kt"
+            line="221"
+            column="105"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.core:core-ktx than 1.12.0 is available: 1.15.0"
+        errorLine1="    implementation(&quot;androidx.core:core-ktx:1.12.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="60"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.7.0 is available: 2.8.7"
+        errorLine1="    implementation(&quot;androidx.lifecycle:lifecycle-runtime-ktx:2.7.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="61"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-compose than 1.8.2 is available: 1.10.1"
+        errorLine1="    implementation(&quot;androidx.activity:activity-compose:1.8.2&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="62"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose:compose-bom than 2023.08.00 is available: 2025.02.00"
+        errorLine1="    implementation(platform(&quot;androidx.compose:compose-bom:2023.08.00&quot;))"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="63"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.google.android.material:material than 1.11.0 is available: 1.12.0"
+        errorLine1="    implementation(&quot;com.google.android.material:material:1.11.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="72"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.work:work-runtime-ktx than 2.9.0 is available: 2.10.0"
+        errorLine1="    implementation(&quot;androidx.work:work-runtime-ktx:2.9.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="78"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.startup:startup-runtime than 1.1.1 is available: 1.2.0"
+        errorLine1="    implementation(&quot;androidx.startup:startup-runtime:1.1.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="81"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.navigation:navigation-compose than 2.7.7 is available: 2.8.8"
+        errorLine1="    implementation(&quot;androidx.navigation:navigation-compose:2.7.7&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="84"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-ktx than 1.8.2 is available: 1.10.1"
+        errorLine1="    implementation(&quot;androidx.activity:activity-ktx:1.8.2&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="87"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.test.ext:junit than 1.1.5 is available: 1.2.1"
+        errorLine1="    androidTestImplementation(&quot;androidx.test.ext:junit:1.1.5&quot;)"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="90"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.test.espresso:espresso-core than 3.5.1 is available: 3.6.1"
+        errorLine1="    androidTestImplementation(&quot;androidx.test.espresso:espresso-core:3.5.1&quot;)"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="91"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose:compose-bom than 2023.08.00 is available: 2025.02.00"
+        errorLine1="    androidTestImplementation(platform(&quot;androidx.compose:compose-bom:2023.08.00&quot;))"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="92"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.jetbrains.kotlin.android than 1.9.20 is available: 2.0.21"
+        errorLine1="kotlin = &quot;1.9.20&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="2"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.jetbrains.kotlin.android than 1.9.20 is available: 2.0.21"
+        errorLine1="kotlin = &quot;1.9.20&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="2"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.jetbrains.kotlin.android than 1.9.20 is available: 2.0.21"
+        errorLine1="kotlin = &quot;1.9.20&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="2"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.jetbrains.kotlin:kotlin-stdlib than 1.9.20 is available: 2.1.0"
+        errorLine1="kotlin = &quot;1.9.20&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="2"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.jetbrains.kotlin:kotlin-stdlib than 1.9.20 is available: 2.1.0"
+        errorLine1="kotlin = &quot;1.9.20&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="2"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.jetbrains.kotlin:kotlin-stdlib than 1.9.20 is available: 2.1.0"
+        errorLine1="kotlin = &quot;1.9.20&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="2"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.material:material than 1.6.3 is available: 1.7.8"
+        errorLine1="compose = &quot;1.6.3&quot;"
+        errorLine2="          ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="3"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.material:material than 1.6.3 is available: 1.7.8"
+        errorLine1="compose = &quot;1.6.3&quot;"
+        errorLine2="          ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="3"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.material:material than 1.6.3 is available: 1.7.8"
+        errorLine1="compose = &quot;1.6.3&quot;"
+        errorLine2="          ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="3"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui than 1.6.3 is available: 1.7.8"
+        errorLine1="compose = &quot;1.6.3&quot;"
+        errorLine2="          ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="3"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui than 1.6.3 is available: 1.7.8"
+        errorLine1="compose = &quot;1.6.3&quot;"
+        errorLine2="          ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="3"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui than 1.6.3 is available: 1.7.8"
+        errorLine1="compose = &quot;1.6.3&quot;"
+        errorLine2="          ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="3"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui-tooling than 1.6.3 is available: 1.7.8"
+        errorLine1="compose = &quot;1.6.3&quot;"
+        errorLine2="          ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="3"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui-tooling than 1.6.3 is available: 1.7.8"
+        errorLine1="compose = &quot;1.6.3&quot;"
+        errorLine2="          ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="3"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.compose.ui:ui-tooling than 1.6.3 is available: 1.7.8"
+        errorLine1="compose = &quot;1.6.3&quot;"
+        errorLine2="          ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="3"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-compose than 1.8.0 is available: 1.10.1"
+        errorLine1="compose-activity = { module = &quot;androidx.activity:activity-compose&quot;, version = &quot;1.8.0&quot; }"
+        errorLine2="                                                                              ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="11"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-compose than 1.8.0 is available: 1.10.1"
+        errorLine1="compose-activity = { module = &quot;androidx.activity:activity-compose&quot;, version = &quot;1.8.0&quot; }"
+        errorLine2="                                                                              ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="11"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.activity:activity-compose than 1.8.0 is available: 1.10.1"
+        errorLine1="compose-activity = { module = &quot;androidx.activity:activity-compose&quot;, version = &quot;1.8.0&quot; }"
+        errorLine2="                                                                              ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="11"
+            column="79"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.navigation:navigation-compose than 2.7.5 is available: 2.8.8"
+        errorLine1="compose-navigation = { module = &quot;androidx.navigation:navigation-compose&quot;, version = &quot;2.7.5&quot; }"
+        errorLine2="                                                                                    ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="12"
+            column="85"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.navigation:navigation-compose than 2.7.5 is available: 2.8.8"
+        errorLine1="compose-navigation = { module = &quot;androidx.navigation:navigation-compose&quot;, version = &quot;2.7.5&quot; }"
+        errorLine2="                                                                                    ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="12"
+            column="85"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.navigation:navigation-compose than 2.7.5 is available: 2.8.8"
+        errorLine1="compose-navigation = { module = &quot;androidx.navigation:navigation-compose&quot;, version = &quot;2.7.5&quot; }"
+        errorLine2="                                                                                    ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/GlucoseUploader/gradle/libs.versions.toml"
+            line="12"
+            column="85"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; `SDK_INT` is always >= 26"
+        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/GlucoseReadWorker.kt"
+            line="168"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <location
+            file="src/main/res/mipmap-anydpi-v26"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var initAttempt by remember { mutableStateOf(0) }"
+        errorLine2="                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/GlucoseUploaderScreen.kt"
+            line="64"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var currentStep by remember { mutableStateOf(1) }"
+        errorLine2="                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/HealthConnectOnboardingActivity.kt"
+            line="60"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.xml.backup_rules` appears to be unused"
+        errorLine1="&lt;full-backup-content>"
+        errorLine2="^">
+        <location
+            file="src/main/res/xml/backup_rules.xml"
+            line="8"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.xml.data_extraction_rules` appears to be unused"
+        errorLine1="&lt;data-extraction-rules>"
+        errorLine2="^">
+        <location
+            file="src/main/res/xml/data_extraction_rules.xml"
+            line="6"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.style.Theme_Material3_Light_NoActionBar` appears to be unused"
+        errorLine1="    &lt;style name=&quot;Theme.Material3.Light.NoActionBar&quot; parent=&quot;Theme.MaterialComponents.Light.NoActionBar&quot;>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/styles.xml"
+            line="4"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    data = Uri.parse(&quot;market://details?id=com.google.android.apps.healthdata&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/HealthConnectUploader.kt"
+            line="152"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="UseKtx"
+        message="Use the KTX extension function `String.toUri` instead?"
+        errorLine1="                    data = Uri.parse(&quot;market://details?id=com.google.android.apps.healthdata&quot;)"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/example/glucoseuploader/HealthConnectUploader.kt"
+            line="152"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.core:core-ktx:1.12.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="60"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.lifecycle:lifecycle-runtime-ktx:2.7.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="61"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead (androidx.activity:activity-compose is already available as `compose-activity`, but using version 1.8.0 instead)"
+        errorLine1="    implementation(&quot;androidx.activity:activity-compose:1.8.2&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="62"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(platform(&quot;androidx.compose:compose-bom:2023.08.00&quot;))"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="63"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead (androidx.compose.ui:ui is already available as `compose-ui`, but using version 1.6.3 instead)"
+        errorLine1="    implementation(&quot;androidx.compose.ui:ui&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="64"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.compose.ui:ui-graphics&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="65"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.compose.ui:ui-tooling-preview&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="66"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead (androidx.compose.material:material is already available as `compose-material`, but using version 1.6.3 instead)"
+        errorLine1="    implementation(&quot;androidx.compose.material:material&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="69"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.compose.material:material-icons-core&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="70"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.compose.material:material-icons-extended&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="71"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;com.google.android.material:material:1.11.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="72"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.health.connect:connect-client:1.0.0-alpha11&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="75"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.work:work-runtime-ktx:2.9.0&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="78"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.startup:startup-runtime:1.1.1&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="81"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead (androidx.navigation:navigation-compose is already available as `compose-navigation`, but using version 2.7.5 instead)"
+        errorLine1="    implementation(&quot;androidx.navigation:navigation-compose:2.7.7&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="84"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;androidx.activity:activity-ktx:1.8.2&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="87"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    testImplementation(&quot;junit:junit:4.13.2&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="89"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    androidTestImplementation(&quot;androidx.test.ext:junit:1.1.5&quot;)"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="90"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    androidTestImplementation(&quot;androidx.test.espresso:espresso-core:3.5.1&quot;)"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="91"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    androidTestImplementation(platform(&quot;androidx.compose:compose-bom:2023.08.00&quot;))"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="92"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    androidTestImplementation(&quot;androidx.compose.ui:ui-test-junit4&quot;)"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="93"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead (androidx.compose.ui:ui-tooling is already available as `compose-tooling`, but using version 1.6.3 instead)"
+        errorLine1="    debugImplementation(&quot;androidx.compose.ui:ui-tooling&quot;)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="94"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    debugImplementation(&quot;androidx.compose.ui:ui-test-manifest&quot;)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="95"
+            column="25"/>
+    </issue>
+
+</issues>
