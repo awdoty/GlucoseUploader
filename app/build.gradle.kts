@@ -76,6 +76,16 @@ dependencies {
     implementation(libs.material.icons.core)
     implementation(libs.material.icons.extended)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation 'androidx.activity:activity-compose:1.8.2'
+    implementation "androidx.compose.ui:ui:1.6.3"
+    implementation "androidx.compose.ui:ui-tooling-preview:1.6.3"
+
+    // Material Design 3
+    implementation 'androidx.compose.material3:material3:1.2.0'
+
+    // Material Components (for backward compatibility)
+    implementation 'com.google.android.material:material:1.11.0'
+
 
     // Health Connect
     implementation(libs.connect.client)
@@ -97,6 +107,4 @@ dependencies {
     // Debug
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
-
-    // Removed duplicate Compose dependencies
-}
+ }
