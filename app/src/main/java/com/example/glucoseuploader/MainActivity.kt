@@ -13,7 +13,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
@@ -341,7 +341,7 @@ class MainActivity : ComponentActivity() {
                             text = "v${BuildConfig.VERSION_NAME}",
                             modifier = Modifier.padding(end = 16.dp),
                             color = Color.White.copy(alpha = 0.7f),
-                            style = MaterialTheme.typography.caption
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 )
@@ -382,7 +382,7 @@ class MainActivity : ComponentActivity() {
                 composable("home") {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colors.background
+                        color = MaterialTheme.colorScheme.background
                     ) {
                         GlucoseUploaderScreen(
                             healthConnectUploader = healthConnectUploader,

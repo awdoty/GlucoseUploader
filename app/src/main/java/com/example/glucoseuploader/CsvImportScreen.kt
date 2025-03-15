@@ -1,146 +1,187 @@
 package com.example.glucoseuploader
 
-import android.content.Context
+import android.content.ContentResolver
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.provider.OpenableColumns
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.records.BloodGlucoseRecord
+import androidx.lifecycle.lifecycleScope
+import com.example.glucoseuploader.ui.theme.GlucoseUploaderTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
+import kotlinx.coroutines.withContext
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
-/**
- * Screen for importing glucose data from CSV files shared from AgaMatrix
- */
-@Composable
-fun CsvImportScreen(
-    uri: Uri,
-    healthConnectUploader: HealthConnectUploader,
-    onImportComplete: (success: Boolean, message: String) -> Unit
-) {
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
+class CsvImportActivity : ComponentActivity() {
 
-    var isLoading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var glucoseData by remember { mutableStateOf<List<GlucoseData>>(emptyList()) }
-    var isUploading by remember { mutableStateOf(false) }
+    private val TAG = "CsvImportActivity"
+    private lateinit var healthConnectUploader: HealthConnectUploader
 
-    // Load CSV data when screen is shown
-    LaunchedEffect(uri) {
-        try {
-            // Read CSV file
-            val data = readCsvFile(context, uri)
-            glucoseData = data
-            error = if (data.isEmpty()) "No glucose readings found in file" else null
-        } catch (e: Exception) {
-            error = "Error reading file: ${e.message}"
-        } finally {
-            isLoading = false
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        healthConnectUploader = HealthConnectUploader(this)
+
+        // Get the URI of the CSV file from the intent
+        val action = intent?.action
+
+        val uri = when {
+            // Handle VIEW action (opening file directly)
+            action == Intent.ACTION_VIEW -> intent.data
+
+            // Handle SEND action (sharing from another app)
+            action == Intent.ACTION_SEND -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                }
+            }
+
+            // Handle other cases
+            else -> null
+        }
+
+        if (uri == null) {
+            Toast.makeText(this, "No CSV file provided", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        // Get file metadata
+        val fileName = getFileName(uri)
+        val fileSize = getFileSize(uri)
+        val fileType = contentResolver.getType(uri)
+
+        Log.d(TAG, "Received action: $action with URI: $uri")
+        Log.d(TAG, "File name: $fileName")
+        Log.d(TAG, "File size: $fileSize bytes")
+        Log.d(TAG, "File type: $fileType")
+
+        // Process the CSV file
+        setContent {
+            GlucoseUploaderTheme {
+                CsvImportScreen(uri, fileName)
+            }
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Import Glucose Readings",
-            style = MaterialTheme.typography.h5,
-            fontWeight = FontWeight.Bold
-        )
+    @Composable
+    fun CsvImportScreen(uri: Uri, fileName: String?) {
+        var isLoading by remember { mutableStateOf(true) }
+        var csvContent by remember { mutableStateOf<List<String>>(emptyList()) }
+        var detectedType by remember { mutableStateOf("Unknown") }
+        var readings by remember { mutableStateOf<List<GlucoseReading>>(emptyList()) }
+        var uploadStatus by remember { mutableStateOf("") }
+        var uploadProgress by remember { mutableStateOf(0f) }
+        var isUploading by remember { mutableStateOf(false) }
+        var selectedMealType by remember { mutableIntStateOf(BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN) }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Load CSV data when the screen is composed
+        LaunchedEffect(uri) {
+            try {
+                val reader = CsvReader(this@CsvImportActivity)
+                val csvLines = reader.readCsvFile(uri)
+                csvContent = csvLines
 
-        when {
-            isLoading -> {
-                CircularProgressIndicator()
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Reading file...")
-            }
-            error != null -> {
-                ErrorCard(error!!)
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { onImportComplete(false, error!!) }) {
-                    Text("Close")
+                // Parse the CSV content
+                val parseResult = reader.parseGenericCsvFormat(csvLines)
+                readings = parseResult
+                detectedType = reader.detectCsvType(csvLines)
+
+                isLoading = false
+            } catch (e: Exception) {
+                Log.e(TAG, "Error reading CSV", e)
+                Toast.makeText(this@CsvImportActivity, "Error reading CSV: ${e.message}", Toast.LENGTH_SHORT).show()
+                withContext(Dispatchers.Main) {
+                    finish()
                 }
             }
-            else -> {
-                // Show preview of data
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = 4.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
+        }
+
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Import CSV",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // File info
+                fileName?.let {
+                    Text(text = "File: $it", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Text(text = "File Type: $detectedType", style = MaterialTheme.typography.bodyLarge)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (isLoading) {
+                    // Show loading spinner
+                    CircularProgressIndicator()
+                    Text(text = "Reading CSV...", style = MaterialTheme.typography.bodyLarge)
+                } else {
+                    // Show parsing results
+                    if (readings.isEmpty()) {
                         Text(
-                            text = "Found ${glucoseData.size} glucose readings",
-                            style = MaterialTheme.typography.h6
+                            text = "No glucose readings found in the file",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        Text(
+                            text = "Found ${readings.size} glucose readings",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        Text("Preview:")
+                        // Show a sample of readings
+                        readings.take(3).forEach { reading ->
+                            Text(
+                                text = "${reading.timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}: ${reading.value} mg/dL",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp)
-                        ) {
-                            items(glucoseData.take(10)) { item ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("${item.date} ${item.time}")
-                                    Text("${item.glucose} mg/dL")
-                                }
-                                Divider()
-                            }
-
-                            if (glucoseData.size > 10) {
-                                item {
-                                    Text(
-                                        text = "... and ${glucoseData.size - 10} more readings",
-                                        style = MaterialTheme.typography.caption,
-                                        modifier = Modifier.padding(vertical = 8.dp)
-                                    )
-                                }
-                            }
+                        if (readings.size > 3) {
+                            Text(
+                                text = "... and ${readings.size - 3} more",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // Meal Type Selection
-                        var selectedMealType by remember { mutableIntStateOf(BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN) }
-
                         Text(
                             text = "Select Meal Type for Import",
-                            style = MaterialTheme.typography.subtitle1,
-                            fontWeight = FontWeight.Bold
+                            style = MaterialTheme.typography.titleMedium
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -161,161 +202,173 @@ fun CsvImportScreen(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false }
                             ) {
-                                DropdownMenuItem(onClick = {
-                                    selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_BEFORE_MEAL
-                                    expanded = false
-                                }) {
-                                    Text("Before Meal")
-                                }
-                                DropdownMenuItem(onClick = {
-                                    selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_AFTER_MEAL
-                                    expanded = false
-                                }) {
-                                    Text("After Meal")
-                                }
-                                DropdownMenuItem(onClick = {
-                                    selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_FASTING
-                                    expanded = false
-                                }) {
-                                    Text("Fasting")
-                                }
-                                DropdownMenuItem(onClick = {
-                                    selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_GENERAL
-                                    expanded = false
-                                }) {
-                                    Text("General")
-                                }
+                                DropdownMenuItem(
+                                    text = { Text("Before Meal") },
+                                    onClick = {
+                                        selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_BEFORE_MEAL
+                                        expanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("After Meal") },
+                                    onClick = {
+                                        selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_AFTER_MEAL
+                                        expanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Fasting") },
+                                    onClick = {
+                                        selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_FASTING
+                                        expanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("General") },
+                                    onClick = {
+                                        selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_GENERAL
+                                        expanded = false
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Unknown") },
+                                    onClick = {
+                                        selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN
+                                        expanded = false
+                                    }
+                                )
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Upload button
+                        Button(
+                            onClick = {
+                                isUploading = true
+                                uploadProgress = 0f
+
+                                lifecycleScope.launch {
+                                    try {
+                                        uploadStatus = "Uploading readings..."
+
+                                        // Convert readings to doubles and get start/end times
+                                        val values = readings.map { it.value }
+                                        val startTime = readings.minByOrNull { it.timestamp }?.timestamp
+                                            ?: ZonedDateTime.now()
+                                        val endTime = readings.maxByOrNull { it.timestamp }?.timestamp
+                                            ?: ZonedDateTime.now()
+
+                                        // Create list of meal types for all readings
+                                        val mealTypes = List(readings.size) { selectedMealType }
+
+                                        // Upload the readings with progress tracking
+                                        healthConnectUploader.uploadGlucoseSeries(
+                                            values,
+                                            startTime,
+                                            endTime,
+                                            mealTypes
+                                        ) { current, total ->
+                                            uploadProgress = current.toFloat() / total.toFloat()
+                                            uploadStatus = "Uploaded $current of $total readings"
+                                        }
+
+                                        uploadStatus = "Successfully uploaded ${readings.size} readings"
+
+                                        // Auto-close after short delay
+                                        withContext(Dispatchers.Main) {
+                                            kotlinx.coroutines.delay(2000)
+                                            finish()
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e(TAG, "Error uploading readings", e)
+                                        uploadStatus = "Error: ${e.message}"
+                                    } finally {
+                                        isUploading = false
+                                    }
+                                }
+                            },
+                            enabled = !isUploading && readings.isNotEmpty(),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Upload ${readings.size} Readings")
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        // Cancel button
+                        OutlinedButton(
+                            onClick = { finish() },
+                            enabled = !isUploading,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Button(
-                                onClick = { onImportComplete(false, "Import cancelled") },
-                                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
-                            ) {
-                                Text("Cancel")
-                            }
+                            Text("Cancel")
+                        }
 
-                            Button(
-                                onClick = {
-                                    coroutineScope.launch {
-                                        isUploading = true
-                                        try {
-                                            // Pass selected meal type during upload
-                                            uploadGlucoseReadings(
-                                                context,
-                                                healthConnectUploader,
-                                                glucoseData,
-                                                selectedMealType
-                                            )
-                                            onImportComplete(true, "Successfully imported ${glucoseData.size} glucose readings")
-                                        } catch (e: Exception) {
-                                            onImportComplete(false, "Error uploading data: ${e.message}")
-                                        } finally {
-                                            isUploading = false
-                                        }
-                                    }
-                                },
-                                enabled = !isUploading && glucoseData.isNotEmpty()
-                            ) {
-                                if (isUploading) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        color = MaterialTheme.colors.onPrimary,
-                                        strokeWidth = 2.dp
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                }
-                                Text("Import All Readings")
-                            }
+                        // Show upload progress
+                        if (isUploading) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(text = uploadStatus)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = uploadProgress,
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     }
                 }
             }
         }
     }
-}
 
-/**
- * Upload glucose readings to Health Connect
- */
-private suspend fun uploadGlucoseReadings(
-    context: Context,
-    healthConnectUploader: HealthConnectUploader,
-    glucoseData: List<GlucoseData>,
-    mealType: Int
-) {
-    // Convert to a list of time-value pairs with meal type
-    val readings = glucoseData.mapNotNull { data ->
-        try {
-            // Parse date and time
-            val dateTimeStr = "${data.date} ${data.time}"
-            // Try different common date formats
-            val dateTime = tryParseDateTime(dateTimeStr)
-
-            // Convert to ZonedDateTime
-            val zonedDateTime = ZonedDateTime.of(
-                dateTime,
-                ZoneId.systemDefault()
-            )
-
-            // Include meal type in the upload
-            Triple(zonedDateTime, data.glucose.toDouble(), mealType)
-        } catch (e: Exception) {
-            // Skip unparseable entries
-            null
+    /**
+     * Get the filename from a URI
+     */
+    private fun getFileName(uri: Uri): String? {
+        var result: String? = null
+        if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
+            try {
+                contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex != -1) {
+                            result = cursor.getString(nameIndex)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting filename", e)
+            }
         }
-    }
-
-    // Get min and max times for the series
-    if (readings.isNotEmpty()) {
-        val startTime = readings.minByOrNull { it.first.toInstant().toEpochMilli() }?.first ?: return
-        val endTime = readings.maxByOrNull { it.first.toInstant().toEpochMilli() }?.first ?: return
-
-        // Get just the glucose values and meal types
-        val values = readings.map { it.second }
-        val types = readings.map { it.third }
-
-        // Upload as a series with meal type
-        healthConnectUploader.uploadGlucoseSeries(
-            values = values,
-            startTime = startTime,
-            endTime = endTime,
-            mealTypes = types
-        )
-    }
-}
-
-// ... rest of the file remains the same
-
-/**
- * Try to parse a date-time string with different common formats
- */
-private fun tryParseDateTime(dateTimeStr: String): LocalDateTime {
-    val formats = listOf(
-        "yyyy-MM-dd HH:mm:ss",
-        "yyyy-MM-dd HH:mm",
-        "MM/dd/yyyy HH:mm:ss",
-        "MM/dd/yyyy HH:mm",
-        "dd/MM/yyyy HH:mm:ss",
-        "dd/MM/yyyy HH:mm",
-        "MM-dd-yyyy HH:mm:ss",
-        "MM-dd-yyyy HH:mm"
-    )
-
-    for (format in formats) {
-        try {
-            return LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ofPattern(format))
-        } catch (e: DateTimeParseException) {
-            // Try next format
+        if (result == null) {
+            result = uri.path
+            val cut = result?.lastIndexOf('/')
+            if (cut != -1) {
+                result = result?.substring(cut!! + 1)
+            }
         }
+        return result
     }
 
-    // If all formats fail, throw exception
-    throw DateTimeParseException("Could not parse date-time: $dateTimeStr", dateTimeStr, 0)
+    /**
+     * Get the file size from a URI
+     */
+    private fun getFileSize(uri: Uri): Long {
+        var size: Long = 0
+        if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
+            try {
+                contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                        if (sizeIndex != -1) {
+                            size = cursor.getLong(sizeIndex)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting file size", e)
+            }
+        }
+        return size
+    }
 }

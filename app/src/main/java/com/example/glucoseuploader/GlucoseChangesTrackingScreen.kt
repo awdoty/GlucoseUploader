@@ -3,7 +3,7 @@ package com.example.glucoseuploader
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.*
@@ -107,7 +107,7 @@ fun GlucoseChangesTrackingScreen(
     ) {
         Text(
             text = "Track Glucose Reading Changes",
-            style = MaterialTheme.typography.h5,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
 
@@ -130,7 +130,7 @@ fun GlucoseChangesTrackingScreen(
                 ) {
                     Text(
                         text = "Change Tracking",
-                        style = MaterialTheme.typography.h6
+                        style = MaterialTheme.typography.titleLarge
                     )
 
                     Switch(
@@ -156,7 +156,7 @@ fun GlucoseChangesTrackingScreen(
                     } else {
                         "Enable tracking to monitor changes to your glucose readings."
                     },
-                    style = MaterialTheme.typography.body1
+                    style = MaterialTheme.typography.bodyLarge
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -187,20 +187,20 @@ fun GlucoseChangesTrackingScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                backgroundColor = MaterialTheme.colors.error.copy(alpha = 0.1f)
+                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
                         text = "Error",
-                        style = MaterialTheme.typography.subtitle1,
-                        color = MaterialTheme.colors.error
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = it,
-                        style = MaterialTheme.typography.body2
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -220,7 +220,7 @@ fun GlucoseChangesTrackingScreen(
                 ) {
                     Text(
                         text = "Changes",
-                        style = MaterialTheme.typography.h6
+                        style = MaterialTheme.typography.titleLarge
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -229,7 +229,7 @@ fun GlucoseChangesTrackingScreen(
                         items(changes) { change ->
                             Text(
                                 text = change,
-                                style = MaterialTheme.typography.body2,
+                                style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(vertical = 4.dp)
                             )
                             Divider()

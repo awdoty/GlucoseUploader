@@ -3,7 +3,7 @@ package com.example.glucoseuploader
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +30,7 @@ fun EnhancedGlucoseHistoryScreen(
     ) {
         Text(
             text = "Glucose Data",
-            style = MaterialTheme.typography.h5
+            style = MaterialTheme.typography.headlineMedium
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -45,7 +45,7 @@ fun EnhancedGlucoseHistoryScreen(
             ) {
                 Text(
                     text = "Recent Data (Last 30 Days)",
-                    style = MaterialTheme.typography.h6
+                    style = MaterialTheme.typography.titleLarge
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))

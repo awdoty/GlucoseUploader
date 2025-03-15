@@ -7,7 +7,8 @@ import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material3.*
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
@@ -73,7 +74,7 @@ fun SettingsScreen(
     ) {
         Text(
             text = "Settings",
-            style = MaterialTheme.typography.h5,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
 
@@ -98,14 +99,14 @@ fun SettingsScreen(
         // Background Check Settings
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = 4.dp
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
                     text = "Background Glucose Check",
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -162,14 +163,14 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("1 hour", style = MaterialTheme.typography.caption)
-                        Text("12 hours", style = MaterialTheme.typography.caption)
-                        Text("24 hours", style = MaterialTheme.typography.caption)
+                        Text("1 hour", style = MaterialTheme.typography.bodySmall)
+                        Text("12 hours", style = MaterialTheme.typography.bodySmall)
+                        Text("24 hours", style = MaterialTheme.typography.bodySmall)
                     }
 
                     Text(
                         text = "Currently set to check every $backgroundCheckInterval hours",
-                        style = MaterialTheme.typography.body2
+                        style = MaterialTheme.typography.bodyMedium
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -238,14 +239,17 @@ fun SettingsScreen(
         // Default Meal Type Settings
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = 4.dp
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
                     text = "Default Meal Type",
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -253,7 +257,7 @@ fun SettingsScreen(
 
                 Text(
                     text = "Select the default meal type to use when uploading glucose readings",
-                    style = MaterialTheme.typography.body2
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -293,16 +297,19 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // About Section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = 4.dp
-        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
                 Text(
                     text = "About",
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -315,7 +322,7 @@ fun SettingsScreen(
 
                 Text(
                     text = "This app allows you to upload glucose readings from CSV files to Health Connect.",
-                    style = MaterialTheme.typography.body2
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -341,16 +348,16 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Debug Section
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = 4.dp
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
                 Text(
                     text = "Advanced Options",
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
 
@@ -362,7 +369,7 @@ fun SettingsScreen(
                         GlucoseReadWorker.cancelAllWork(context)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red, contentColor = Color.White)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red, contentColor = Color.White)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
@@ -387,7 +394,7 @@ fun SettingsScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
                 ) {
                     Icon(
                         imageVector = Icons.Default.DeleteForever,
@@ -417,16 +424,21 @@ fun HealthConnectStatusCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = 4.dp,
-        backgroundColor = if (isHealthConnectAvailable && hasPermissions)
-            Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isHealthConnectAvailable && hasPermissions)
+                Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
+        )
     ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = "Health Connect Status",
-                style = MaterialTheme.typography.h6,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
@@ -441,7 +453,7 @@ fun HealthConnectStatusCard(
                 )
                 Text(
                     text = "Checking Health Connect status...",
-                    style = MaterialTheme.typography.body2
+                    style = MaterialTheme.typography.bodyMedium
                 )
             } else {
                 Row(
@@ -455,7 +467,7 @@ fun HealthConnectStatusCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (isHealthConnectAvailable) "Health Connect Available" else "Health Connect Not Available",
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
@@ -466,7 +478,7 @@ fun HealthConnectStatusCard(
                     healthConnectVersion?.let {
                         Text(
                             text = "Version: $it",
-                            style = MaterialTheme.typography.caption
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
 
@@ -484,7 +496,7 @@ fun HealthConnectStatusCard(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = if (hasPermissions) "Permissions Granted" else "Permissions Required",
-                            style = MaterialTheme.typography.body1
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     }
 

@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +45,7 @@ class PermissionsRationaleActivity : ComponentActivity() {
 
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colors.background
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(
                 modifier = Modifier
@@ -55,14 +55,14 @@ class PermissionsRationaleActivity : ComponentActivity() {
             ) {
                 Text(
                     text = "Permissions Information",
-                    style = MaterialTheme.typography.h4
+                    style = MaterialTheme.typography.headlineMedium
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
                     text = "This app requires the following Health Connect permissions:",
-                    style = MaterialTheme.typography.body1
+                    style = MaterialTheme.typography.bodyLarge
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -96,21 +96,21 @@ class PermissionsRationaleActivity : ComponentActivity() {
             ) {
                 Text(
                     text = permission.name,
-                    style = MaterialTheme.typography.h6
+                    style = MaterialTheme.typography.titleLarge
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = permission.description,
-                    style = MaterialTheme.typography.body1
+                    style = MaterialTheme.typography.bodyLarge
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
                     text = permission.usage,
-                    style = MaterialTheme.typography.caption
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
         }

@@ -3,7 +3,7 @@ package com.example.glucoseuploader
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.runtime.*
@@ -72,7 +72,7 @@ fun GlucoseHistoryScreen(
     ) {
         Text(
             text = "Glucose History",
-            style = MaterialTheme.typography.h5,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
 
@@ -90,14 +90,14 @@ fun GlucoseHistoryScreen(
             ) {
                 Text(
                     text = "Last 30 Days",
-                    style = MaterialTheme.typography.h6
+                    style = MaterialTheme.typography.titleLarge
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
                     text = "Showing glucose readings from ${formatDate(startTime)} to ${formatDate(endTime)}",
-                    style = MaterialTheme.typography.body2
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
@@ -209,7 +209,7 @@ private fun GlucoseRecordItem(record: BloodGlucoseRecord, packageName: String) {
             Icon(
                 imageVector = Icons.Default.AccessTime,
                 contentDescription = "Time",
-                tint = MaterialTheme.colors.primary
+                tint = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -217,13 +217,13 @@ private fun GlucoseRecordItem(record: BloodGlucoseRecord, packageName: String) {
             Column {
                 Text(
                     text = "$glucoseValue mg/dL",
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
                     text = "$date at $time",
-                    style = MaterialTheme.typography.body2
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
                 // Show data source
@@ -232,8 +232,8 @@ private fun GlucoseRecordItem(record: BloodGlucoseRecord, packageName: String) {
 
                 Text(
                     text = if (isFromThisApp) "Recorded by this app" else "From external app",
-                    style = MaterialTheme.typography.caption,
-                    color = if (isFromThisApp) Color.Gray else MaterialTheme.colors.primary
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isFromThisApp) Color.Gray else MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -260,7 +260,7 @@ private fun NoDataMessage() {
     ) {
         Text(
             text = "No glucose readings found for this time period",
-            style = MaterialTheme.typography.body1
+            style = MaterialTheme.typography.bodyLarge
         )
     }
 }
@@ -272,7 +272,7 @@ private fun ErrorMessage(message: String, onRetry: () -> Unit) {
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         elevation = 4.dp,
-        backgroundColor = Color(0xFFFFEEEE)
+        containerColor = Color(0xFFFFEEEE)
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -280,7 +280,7 @@ private fun ErrorMessage(message: String, onRetry: () -> Unit) {
         ) {
             Text(
                 text = "Error",
-                style = MaterialTheme.typography.h6,
+                style = MaterialTheme.typography.titleLarge,
                 color = Color.Red
             )
 
@@ -288,7 +288,7 @@ private fun ErrorMessage(message: String, onRetry: () -> Unit) {
 
             Text(
                 text = message,
-                style = MaterialTheme.typography.body2
+                style = MaterialTheme.typography.bodyMedium
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -314,14 +314,14 @@ private fun HealthConnectNotAvailableMessage(onInstallClick: () -> Unit) {
         ) {
             Text(
                 text = "Health Connect Not Available",
-                style = MaterialTheme.typography.h6
+                style = MaterialTheme.typography.titleLarge
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Health Connect is required to view your glucose history",
-                style = MaterialTheme.typography.body1
+                style = MaterialTheme.typography.bodyLarge
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -347,14 +347,14 @@ private fun PermissionsRequiredMessage(onRequestPermissions: () -> Unit) {
         ) {
             Text(
                 text = "Permissions Required",
-                style = MaterialTheme.typography.h6
+                style = MaterialTheme.typography.titleLarge
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Permission to read glucose data is required to view your history",
-                style = MaterialTheme.typography.body1
+                style = MaterialTheme.typography.bodyLarge
             )
 
             Spacer(modifier = Modifier.height(16.dp))

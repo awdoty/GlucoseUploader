@@ -1,7 +1,7 @@
 package com.example.glucoseuploader
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 fun ErrorCard(errorMessage: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        backgroundColor = Color(0xFFFFEEEE),
+        containerColor = Color(0xFFFFEEEE),
         elevation = 4.dp
     ) {
         Column(
@@ -34,7 +34,7 @@ fun ErrorCard(errorMessage: String) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Error",
-                    style = MaterialTheme.typography.h6,
+                    style = MaterialTheme.typography.titleLarge,
                     color = Color.Red
                 )
             }
@@ -43,7 +43,7 @@ fun ErrorCard(errorMessage: String) {
 
             Text(
                 text = errorMessage,
-                style = MaterialTheme.typography.body1
+                style = MaterialTheme.typography.bodyLarge
             )
         }
     }

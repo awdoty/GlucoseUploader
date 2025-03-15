@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.*
@@ -92,7 +92,7 @@ fun GlucoseUploaderScreen(
     ) {
         Text(
             text = "Glucose Uploader",
-            style = MaterialTheme.typography.h5,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
 
@@ -110,7 +110,7 @@ fun GlucoseUploaderScreen(
             ) {
                 Text(
                     text = "Status",
-                    style = MaterialTheme.typography.h6
+                    style = MaterialTheme.typography.titleLarge
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -128,7 +128,7 @@ fun GlucoseUploaderScreen(
 
                     Text(
                         text = statusMessage,
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
 
@@ -140,13 +140,13 @@ fun GlucoseUploaderScreen(
 
                     Text(
                         text = "Last Reading",
-                        style = MaterialTheme.typography.subtitle1,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
                     Text(
                         text = "$value mg/dL on ${formatDateTime(time)}",
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
             }
@@ -166,7 +166,7 @@ fun GlucoseUploaderScreen(
             ) {
                 Text(
                     text = "Input Glucose Reading",
-                    style = MaterialTheme.typography.h6
+                    style = MaterialTheme.typography.titleLarge
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -272,7 +272,7 @@ fun GlucoseUploaderScreen(
             ) {
                 Text(
                     text = "Health Connect Setup",
-                    style = MaterialTheme.typography.h6
+                    style = MaterialTheme.typography.titleLarge
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -320,7 +320,7 @@ fun GlucoseUploaderScreen(
 
                     Text(
                         text = "Or open Health Connect directly:",
-                        style = MaterialTheme.typography.body2
+                        style = MaterialTheme.typography.bodyMedium
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -368,14 +368,14 @@ fun GlucoseUploaderScreen(
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
                 elevation = 4.dp,
-                backgroundColor = Color(0xFFFFEEEE)
+                containerColor = Color(0xFFFFEEEE)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
                         text = "Troubleshooting",
-                        style = MaterialTheme.typography.h6,
+                        style = MaterialTheme.typography.titleLarge,
                         color = Color.Red
                     )
 
@@ -383,7 +383,7 @@ fun GlucoseUploaderScreen(
 
                     Text(
                         text = statusMessage,
-                        style = MaterialTheme.typography.body2
+                        style = MaterialTheme.typography.bodyMedium
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -415,14 +415,14 @@ fun GlucoseUploaderScreen(
             ) {
                 Text(
                     text = "Import from CSV",
-                    style = MaterialTheme.typography.h6
+                    style = MaterialTheme.typography.titleLarge
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
                     text = "You can import glucose readings from CSV files shared from other apps.",
-                    style = MaterialTheme.typography.body1
+                    style = MaterialTheme.typography.bodyLarge
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

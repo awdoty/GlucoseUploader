@@ -5,7 +5,7 @@ import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
@@ -73,7 +73,7 @@ fun MultiFileImportScreen(
     ) {
         Text(
             text = "Import Multiple Glucose Files",
-            style = MaterialTheme.typography.h5,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
 
@@ -81,7 +81,7 @@ fun MultiFileImportScreen(
 
         Text(
             text = "Found ${fileImportStates.size} files to import",
-            style = MaterialTheme.typography.subtitle1
+            style = MaterialTheme.typography.titleMedium
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -95,7 +95,7 @@ fun MultiFileImportScreen(
             errorMessage != null -> {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = Color(0xFFFFEEEE),
+                    containerColor = Color(0xFFFFEEEE),
                     elevation = 4.dp
                 ) {
                     Column(
@@ -112,7 +112,7 @@ fun MultiFileImportScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Error",
-                                style = MaterialTheme.typography.h6,
+                                style = MaterialTheme.typography.titleLarge,
                                 color = Color.Red
                             )
                         }
@@ -121,7 +121,7 @@ fun MultiFileImportScreen(
 
                         Text(
                             text = errorMessage ?: "Unknown error",
-                            style = MaterialTheme.typography.body1
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     }
                 }
@@ -140,7 +140,7 @@ fun MultiFileImportScreen(
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Files to Import:",
-                            style = MaterialTheme.typography.h6
+                            style = MaterialTheme.typography.titleLarge
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -179,7 +179,7 @@ fun MultiFileImportScreen(
                         ) {
                             Button(
                                 onClick = { onImportComplete(0, uris.size, "Import cancelled") },
-                                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
                             ) {
                                 Text("Cancel")
                             }
@@ -288,7 +288,7 @@ fun FileImportItem(
 ) {
     val statusColor = when(fileState.status) {
         MultiFileImportScreen.Status.PENDING -> Color.Gray
-        MultiFileImportScreen.Status.LOADING -> MaterialTheme.colors.primary
+        MultiFileImportScreen.Status.LOADING -> MaterialTheme.colorScheme.primary
         MultiFileImportScreen.Status.SUCCESS -> Color.Green
         MultiFileImportScreen.Status.ERROR -> Color.Red
     }
@@ -335,14 +335,14 @@ fun FileImportItem(
         ) {
             Text(
                 text = fileState.filename,
-                style = MaterialTheme.typography.subtitle1,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
             if (fileState.message.isNotEmpty()) {
                 Text(
                     text = fileState.message,
-                    style = MaterialTheme.typography.caption,
+                    style = MaterialTheme.typography.bodySmall,
                     color = statusColor
                 )
             }
@@ -350,7 +350,7 @@ fun FileImportItem(
             if (fileState.glucoseData.isNotEmpty()) {
                 Text(
                     text = "${fileState.glucoseData.size} readings found",
-                    style = MaterialTheme.typography.caption
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
         }
@@ -361,7 +361,7 @@ fun FileImportItem(
                 onClick = onPreview,
                 modifier = Modifier.padding(start = 8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.primaryVariant
+                    containerColor = MaterialTheme.colorScheme.primaryVariant
                 )
             ) {
                 Text("Preview")

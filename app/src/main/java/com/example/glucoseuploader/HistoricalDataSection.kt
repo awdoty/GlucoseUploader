@@ -3,7 +3,7 @@ package com.example.glucoseuploader
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
 import androidx.compose.runtime.*
@@ -59,7 +59,7 @@ fun HistoricalDataSection(
         ) {
             Text(
                 text = "Historical Glucose Data",
-                style = MaterialTheme.typography.h6,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
@@ -68,13 +68,13 @@ fun HistoricalDataSection(
             if (!isHistoryReadAvailable) {
                 Text(
                     text = "Historical data reading is not available on this device. Please update Health Connect.",
-                    style = MaterialTheme.typography.body1
+                    style = MaterialTheme.typography.bodyLarge
                 )
             } else {
                 if (!hasHistoryReadPermission) {
                     Text(
                         text = "Permission to read historical data (older than 30 days) is required for long-term trend analysis.",
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.bodyLarge
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -102,7 +102,7 @@ fun HistoricalDataSection(
                     // Permission is granted, show historical data button
                     Text(
                         text = "You have permission to access historical glucose data. Load data from the past 90 days.",
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.bodyLarge
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -150,8 +150,8 @@ fun HistoricalDataSection(
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = it,
-                            style = MaterialTheme.typography.body2,
-                            color = MaterialTheme.colors.error
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
                         )
                     }
 
@@ -168,12 +168,12 @@ fun HistoricalDataSection(
                         if (groupedRecords.isEmpty()) {
                             Text(
                                 text = "No historical glucose data found.",
-                                style = MaterialTheme.typography.body1
+                                style = MaterialTheme.typography.bodyLarge
                             )
                         } else {
                             Text(
                                 text = "Historical Data Summary",
-                                style = MaterialTheme.typography.subtitle1,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
 
@@ -201,7 +201,7 @@ fun HistoricalDataSection(
                                         ) {
                                             Text(
                                                 text = "${yearMonth.month}/${yearMonth.year}",
-                                                style = MaterialTheme.typography.subtitle1,
+                                                style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.Bold
                                             )
 
@@ -209,17 +209,17 @@ fun HistoricalDataSection(
 
                                             Text(
                                                 text = "Readings: ${records.size}",
-                                                style = MaterialTheme.typography.body2
+                                                style = MaterialTheme.typography.bodyMedium
                                             )
 
                                             Text(
                                                 text = "Avg: ${String.format("%.1f", avgGlucose)} mg/dL",
-                                                style = MaterialTheme.typography.body2
+                                                style = MaterialTheme.typography.bodyMedium
                                             )
 
                                             Text(
                                                 text = "Range: ${String.format("%.1f", minGlucose)} - ${String.format("%.1f", maxGlucose)} mg/dL",
-                                                style = MaterialTheme.typography.body2
+                                                style = MaterialTheme.typography.bodyMedium
                                             )
                                         }
                                     }

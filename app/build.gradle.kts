@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
+    implementation("androidx.compose.material3:material3:1.2.0")
     implementation(libs.material)
     implementation(libs.material.icons.core)
     implementation(libs.material.icons.extended)

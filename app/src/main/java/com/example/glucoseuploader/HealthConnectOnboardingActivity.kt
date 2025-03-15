@@ -6,7 +6,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,7 +52,7 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
 
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colors.background
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(
                 modifier = Modifier
@@ -63,14 +63,14 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
             ) {
                 Text(
                     text = "Welcome to Glucose Uploader",
-                    style = MaterialTheme.typography.h4
+                    style = MaterialTheme.typography.headlineMedium
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
                     text = "This app helps you upload your blood glucose readings to Health Connect.",
-                    style = MaterialTheme.typography.body1
+                    style = MaterialTheme.typography.bodyLarge
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -82,7 +82,7 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
                         // Health Connect is available, show permissions information
                         Text(
                             text = "The app requires permissions to read and write blood glucose data.",
-                            style = MaterialTheme.typography.body1
+                            style = MaterialTheme.typography.bodyLarge
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -99,8 +99,8 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
                         // Health Connect is not available, show installation information
                         Text(
                             text = "Health Connect is required but not available on this device.",
-                            style = MaterialTheme.typography.body1,
-                            color = MaterialTheme.colors.error
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.error
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))

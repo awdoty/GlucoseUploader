@@ -3,7 +3,7 @@ package com.example.glucoseuploader
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.DateRange
@@ -97,7 +97,7 @@ fun GlucoseStatisticsScreen(
     ) {
         Text(
             text = "Glucose Statistics",
-            style = MaterialTheme.typography.h5,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )
 
@@ -107,20 +107,20 @@ fun GlucoseStatisticsScreen(
         if (!isHealthConnectAvailable) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                backgroundColor = Color(0xFFFFF3E0)
+                containerColor = Color(0xFFFFF3E0)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
                         text = "Health Connect Required",
-                        style = MaterialTheme.typography.h6,
+                        style = MaterialTheme.typography.titleLarge,
                         color = Color(0xFFE65100)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Health Connect is required to view glucose statistics.",
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.bodyLarge
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
@@ -135,20 +135,20 @@ fun GlucoseStatisticsScreen(
         } else if (!hasPermissions) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                backgroundColor = Color(0xFFF1F8E9)
+                containerColor = Color(0xFFF1F8E9)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
                         text = "Permissions Required",
-                        style = MaterialTheme.typography.h6,
+                        style = MaterialTheme.typography.titleLarge,
                         color = Color(0xFF33691E)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Permission to access glucose data is needed to show statistics.",
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.bodyLarge
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
@@ -201,12 +201,12 @@ fun GlucoseStatisticsScreen(
                         Icon(
                             imageVector = Icons.Default.BarChart,
                             contentDescription = "Statistics",
-                            tint = MaterialTheme.colors.primary
+                            tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Period Statistics",
-                            style = MaterialTheme.typography.h6
+                            style = MaterialTheme.typography.titleLarge
                         )
                     }
 
@@ -224,7 +224,7 @@ fun GlucoseStatisticsScreen(
                     } else if (statistics.isEmpty()) {
                         Text(
                             text = "No glucose statistics available.",
-                            style = MaterialTheme.typography.body1
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     } else {
                         statistics.forEach { stat ->
@@ -253,12 +253,12 @@ fun GlucoseStatisticsScreen(
                         Icon(
                             imageVector = Icons.Default.DateRange,
                             contentDescription = "Date",
-                            tint = MaterialTheme.colors.primary
+                            tint = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Date Statistics",
-                            style = MaterialTheme.typography.h6
+                            style = MaterialTheme.typography.titleLarge
                         )
                     }
 
@@ -287,7 +287,7 @@ fun GlucoseStatisticsScreen(
                     } else if (dateStatistics == null || dateStatistics?.readingCount == 0L) {
                         Text(
                             text = "No glucose readings for ${formatDate(selectedDate)}",
-                            style = MaterialTheme.typography.body1
+                            style = MaterialTheme.typography.bodyLarge
                         )
                     } else {
                         dateStatistics?.let { StatisticsCard(it) }
@@ -301,20 +301,20 @@ fun GlucoseStatisticsScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                backgroundColor = MaterialTheme.colors.error.copy(alpha = 0.1f)
+                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
                         text = "Error",
-                        style = MaterialTheme.typography.subtitle1,
-                        color = MaterialTheme.colors.error
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = it,
-                        style = MaterialTheme.typography.body2
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -333,14 +333,14 @@ fun StatisticsCard(statistics: GlucoseStatistics) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = 2.dp,
-        backgroundColor = Color(0xFFF5F5F5)
+        containerColor = Color(0xFFF5F5F5)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
                 text = statistics.period,
-                style = MaterialTheme.typography.subtitle1,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
 
@@ -349,18 +349,18 @@ fun StatisticsCard(statistics: GlucoseStatistics) {
             if (statistics.readingCount == 0L) {
                 Text(
                     text = "No readings for this period",
-                    style = MaterialTheme.typography.body2
+                    style = MaterialTheme.typography.bodyMedium
                 )
             } else {
                 Text(
                     text = "Readings: ${statistics.readingCount}",
-                    style = MaterialTheme.typography.body2
+                    style = MaterialTheme.typography.bodyMedium
                 )
 
                 statistics.averageGlucose?.let {
                     Text(
                         text = "Average: ${String.format("%.1f", it)} mg/dL",
-                        style = MaterialTheme.typography.body1,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -372,14 +372,14 @@ fun StatisticsCard(statistics: GlucoseStatistics) {
                     statistics.minimumGlucose?.let {
                         Text(
                             text = "Min: ${String.format("%.1f", it)} mg/dL",
-                            style = MaterialTheme.typography.body2
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
 
                     statistics.maximumGlucose?.let {
                         Text(
                             text = "Max: ${String.format("%.1f", it)} mg/dL",
-                            style = MaterialTheme.typography.body2
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
@@ -411,7 +411,7 @@ fun DateSelector(
 
         Text(
             text = formatDate(selectedDate),
-            style = MaterialTheme.typography.subtitle1,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )
 

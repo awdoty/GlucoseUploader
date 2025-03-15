@@ -11,7 +11,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -121,7 +121,7 @@ class CsvImportActivity : ComponentActivity() {
 
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colors.background
+            color = MaterialTheme.colorScheme.background
         ) {
             Column(
                 modifier = Modifier
@@ -131,38 +131,38 @@ class CsvImportActivity : ComponentActivity() {
             ) {
                 Text(
                     text = "Import CSV",
-                    style = MaterialTheme.typography.h5
+                    style = MaterialTheme.typography.headlineMedium
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // File info
                 fileName?.let {
-                    Text(text = "File: $it", style = MaterialTheme.typography.body1)
+                    Text(text = "File: $it", style = MaterialTheme.typography.bodyLarge)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                Text(text = "File Type: $detectedType", style = MaterialTheme.typography.body1)
+                Text(text = "File Type: $detectedType", style = MaterialTheme.typography.bodyLarge)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 if (isLoading) {
                     // Show loading spinner
                     CircularProgressIndicator()
-                    Text(text = "Reading CSV...", style = MaterialTheme.typography.body1)
+                    Text(text = "Reading CSV...", style = MaterialTheme.typography.bodyLarge)
                 } else {
                     // Show parsing results
                     if (readings.isEmpty()) {
                         Text(
                             text = "No glucose readings found in the file",
-                            style = MaterialTheme.typography.h6,
-                            color = MaterialTheme.colors.error
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.error
                         )
                     } else {
                         Text(
                             text = "Found ${readings.size} glucose readings",
-                            style = MaterialTheme.typography.h6,
-                            color = MaterialTheme.colors.primary
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.primary
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -171,14 +171,14 @@ class CsvImportActivity : ComponentActivity() {
                         readings.take(3).forEach { reading ->
                             Text(
                                 text = "${reading.timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}: ${reading.value} mg/dL",
-                                style = MaterialTheme.typography.body1
+                                style = MaterialTheme.typography.bodyLarge
                             )
                         }
 
                         if (readings.size > 3) {
                             Text(
                                 text = "... and ${readings.size - 3} more",
-                                style = MaterialTheme.typography.caption
+                                style = MaterialTheme.typography.bodySmall
                             )
                         }
 
@@ -187,7 +187,7 @@ class CsvImportActivity : ComponentActivity() {
                         // Meal Type Selection
                         Text(
                             text = "Select Meal Type for Import",
-                            style = MaterialTheme.typography.subtitle1
+                            style = MaterialTheme.typography.titleMedium
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -208,7 +208,8 @@ class CsvImportActivity : ComponentActivity() {
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false }
                             ) {
-                                DropdownMenuItem(onClick = {
+                                text = { Text("Before Meal") },
+                                onClick = {
                                     selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_BEFORE_MEAL
                                     expanded = false
                                 }) {

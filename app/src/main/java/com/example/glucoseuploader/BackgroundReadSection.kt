@@ -61,7 +61,7 @@ fun BackgroundReadSection(
         ) {
             Text(
                 text = "Background Reading",
-                style = MaterialTheme.typography.h6,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
@@ -70,13 +70,13 @@ fun BackgroundReadSection(
             if (!isBackgroundReadAvailable) {
                 Text(
                     text = "Background reading is not available on this device. Please update Health Connect.",
-                    style = MaterialTheme.typography.body1
+                    style = MaterialTheme.typography.bodyLarge
                 )
             } else {
                 if (!hasBackgroundReadPermission) {
                     Text(
                         text = "Background reading permission is required for automatic glucose monitoring.",
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.bodyLarge
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -94,7 +94,7 @@ fun BackgroundReadSection(
                 } else {
                     Text(
                         text = "Background reading permission granted. You can schedule automatic glucose checks.",
-                        style = MaterialTheme.typography.body1
+                        style = MaterialTheme.typography.bodyLarge
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
