@@ -1,9 +1,9 @@
 // Top-level build file
 
 plugins {
-    id("com.android.application") version "8.9.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
-    id("com.android.library") version "8.9.0" apply false
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose") version "1.5.7"
 }
 
 // Optional clean task

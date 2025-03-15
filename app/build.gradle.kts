@@ -10,7 +10,6 @@ android {
     defaultConfig {
         applicationId = "com.example.glucoseuploader"
         minSdk = 26
-        //noinspection EditedTargetSdkVersion
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -37,7 +36,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17" // Fixed to match Java version
     }
 
     buildFeatures {
@@ -45,7 +44,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.6"
+        kotlinCompilerExtensionVersion = "1.5.7"
     }
 
     packaging {
@@ -63,37 +62,40 @@ android {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
-    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation(libs.core.ktx.v1150)
+    implementation(libs.lifecycle.runtime.ktx.v287)
+    implementation(libs.activity.compose.v1101)
 
-    // Compose
-    implementation(platform("androidx.compose:compose-bom:2025.03.00"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material:material")
-    implementation("androidx.compose.material:material-icons-core")
-    implementation("androidx.compose.material:material-icons-extended")
+    // Compose - using only one set of dependencies (the BOM approach)
+    implementation(platform(libs.compose.bom))
+    implementation(libs.ui)
+    implementation(libs.ui.graphics)
+    implementation(libs.ui.tooling.preview)
+    implementation(libs.material)
+    implementation(libs.material.icons.core)
+    implementation(libs.material.icons.extended)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     // Health Connect
-    implementation("androidx.health.connect:connect-client:1.1.0-beta01")
+    implementation(libs.connect.client)
 
     // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.10.0")
+    implementation(libs.work.runtime.ktx)
 
     // Navigation
-    implementation("androidx.navigation:navigation-compose:2.8.9")
+    implementation(libs.navigation.compose.v289)
 
     // CSV parsing
-    implementation("org.apache.commons:commons-csv:1.13.0")
+    implementation(libs.commons.csv)
 
     // Testing
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
 
     // Debug
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:1.8.0-rc01")
+    debugImplementation(libs.ui.tooling)
+    debugImplementation(libs.ui.test.manifest)
+
+    // Removed duplicate Compose dependencies
 }

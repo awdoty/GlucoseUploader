@@ -129,7 +129,7 @@ fun BackgroundReadSection(
                         Text("Schedule Background Check (10 min)")
                     }
                 }
-            }L
+            }
         }
     }
 }
