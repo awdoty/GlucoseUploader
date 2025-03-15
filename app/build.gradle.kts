@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.example.glucoseuploader"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.glucoseuploader"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -23,10 +23,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 
@@ -36,7 +33,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = "17" // Fixed to match Java version
+        jvmTarget = "17"
     }
 
     buildFeatures {
@@ -44,7 +41,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.7"
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
 
     packaging {
@@ -55,56 +52,46 @@ android {
 
     lint {
         baseline = file("lint-baseline.xml")
-        disable += listOf("NotificationPermission", "DefaultLocale")
-        abortOnError = false
+        disable += "GradleDependency"
     }
-    buildToolsVersion = "35.0.1"
 }
 
 dependencies {
-    implementation(libs.core.ktx.v1150)
-    implementation(libs.lifecycle.runtime.ktx.v287)
-    implementation(libs.activity.compose.v1101)
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation(platform("androidx.compose:compose-bom:2023.08.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
 
-    // Compose - using only one set of dependencies (the BOM approach)
-    implementation(platform(libs.compose.bom))
-    implementation(libs.ui)
-    implementation(libs.ui.graphics)
-    implementation(libs.ui.tooling.preview)
-    implementation("androidx.compose.material3:material3:1.2.0")
-    implementation(libs.material)
-    implementation(libs.material.icons.core)
-    implementation(libs.material.icons.extended)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation 'androidx.activity:activity-compose:1.8.2'
-    implementation "androidx.compose.ui:ui:1.6.3"
-    implementation "androidx.compose.ui:ui-tooling-preview:1.6.3"
-
-    // Material Design 3
-    implementation 'androidx.compose.material3:material3:1.2.0'
-
-    // Material Components (for backward compatibility)
-    implementation 'com.google.android.material:material:1.11.0'
-
+    // Material components
+    implementation("androidx.compose.material:material")
+    implementation("androidx.compose.material:material-icons-core")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.compose.material3:material3")
+    implementation("com.google.android.material:material:1.11.0")
 
     // Health Connect
-    implementation(libs.connect.client)
+    implementation("androidx.health.connect:connect-client:1.0.0-alpha11")
 
-    // WorkManager
-    implementation(libs.work.runtime.ktx)
+    // Background work
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // App startup
+    implementation("androidx.startup:startup-runtime:1.1.1")
 
     // Navigation
-    implementation(libs.navigation.compose.v289)
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 
-    // CSV parsing
-    implementation(libs.commons.csv)
+    // Activity KTX
+    implementation("androidx.activity:activity-ktx:1.8.2")
 
-    // Testing
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.ext.junit)
-    androidTestImplementation(libs.espresso.core)
-
-    // Debug
-    debugImplementation(libs.ui.tooling)
-    debugImplementation(libs.ui.test.manifest)
- }
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2023.08.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+}

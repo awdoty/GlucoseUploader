@@ -1,52 +1,55 @@
 package com.example.glucoseuploader
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Button
-import androidx.compose.material.Card
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 /**
- * UI section for background read functionality
+ * UI component that shows background reading options and status
  */
 @Composable
 fun BackgroundReadSection(
     healthConnectUploader: HealthConnectUploader,
     requestPermissions: () -> Unit
 ) {
-    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // State management
     var isBackgroundReadAvailable by remember { mutableStateOf(false) }
-    var hasBackgroundReadPermission by remember { mutableStateOf(false) }
+    var hasBackgroundPermissions by remember { mutableStateOf(false) }
+    var isHealthConnectAvailable by remember { mutableStateOf(false) }
+    var isCheckingStatus by remember { mutableStateOf(true) }
+    var statusMessage by remember { mutableStateOf("Checking background read availability...") }
 
-    // Check if background read is available
-    LaunchedEffect(key1 = Unit) {
-        isBackgroundReadAvailable = healthConnectUploader.isBackgroundReadAvailable()
+    // Check status on first load
+    LaunchedEffect(Unit) {
+        try {
+            isHealthConnectAvailable = healthConnectUploader.isHealthConnectAvailable()
 
-        // Check if we have background read permission
-        if (isBackgroundReadAvailable) {
-            val client = healthConnectUploader.healthConnectClient ?: return@LaunchedEffect
-            val grantedPermissions = client.permissionController.getGrantedPermissions()
-            // Check for the background read permission in the granted permissions
-            hasBackgroundReadPermission = grantedPermissions.any {
-                it.toString().contains("READ_HEALTH_DATA_IN_BACKGROUND")
+            if (isHealthConnectAvailable) {
+                isBackgroundReadAvailable = healthConnectUploader.isBackgroundReadAvailable()
+                hasBackgroundPermissions = healthConnectUploader.hasBackgroundReadPermission()
+
+                statusMessage = when {
+                    !isBackgroundReadAvailable -> "Background reading not available on this device"
+                    !hasBackgroundPermissions -> "Background read permissions required"
+                    else -> "Background reading is available and enabled"
+                }
+            } else {
+                statusMessage = "Health Connect not available on this device"
             }
+        } catch (e: Exception) {
+            statusMessage = "Error: ${e.message}"
+        } finally {
+            isCheckingStatus = false
         }
     }
 
@@ -54,81 +57,192 @@ fun BackgroundReadSection(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        elevation = 4.dp
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = "Background Reading",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Sync,
+                    contentDescription = "Background Reading",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                    text = "Background Reading",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (!isBackgroundReadAvailable) {
-                Text(
-                    text = "Background reading is not available on this device. Please update Health Connect.",
-                    style = MaterialTheme.typography.bodyLarge
+            Text(
+                text = "Background reading allows the app to automatically sync your glucose readings from Health Connect.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Status indicator
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = when {
+                        isCheckingStatus -> MaterialTheme.colorScheme.surfaceVariant
+                        isHealthConnectAvailable && isBackgroundReadAvailable && hasBackgroundPermissions ->
+                            MaterialTheme.colorScheme.primaryContainer
+                        !isHealthConnectAvailable -> MaterialTheme.colorScheme.errorContainer
+                        else -> MaterialTheme.colorScheme.secondaryContainer
+                    }
                 )
-            } else {
-                if (!hasBackgroundReadPermission) {
-                    Text(
-                        text = "Background reading permission is required for automatic glucose monitoring.",
-                        style = MaterialTheme.typography.bodyLarge
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "Status Info",
+                        tint = if (isCheckingStatus || !isHealthConnectAvailable)
+                            MaterialTheme.colorScheme.error else
+                            MaterialTheme.colorScheme.primary
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                    Button(
-                        onClick = {
-                            healthConnectUploader.requestBackgroundReadPermission(
-                                context as androidx.activity.ComponentActivity
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Request Background Read Permission")
-                    }
-                } else {
                     Text(
-                        text = "Background reading permission granted. You can schedule automatic glucose checks.",
-                        style = MaterialTheme.typography.bodyLarge
+                        text = statusMessage,
+                        style = MaterialTheme.typography.bodyMedium
                     )
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // Conditional buttons based on status
+            when {
+                isCheckingStatus -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+                !isHealthConnectAvailable -> {
                     Button(
                         onClick = {
-                            // Schedule background read in 1 minute (for testing)
-                            GlucoseReadWorker.schedule(context, delayMinutes = 1)
+                            coroutineScope.launch {
+                                healthConnectUploader.openHealthConnectApp()
+                            }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Schedule"
-                        )
-                        Text("Schedule Background Check (1 min)")
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = {
-                            // Schedule background read with default delay (10 minutes)
-                            GlucoseReadWorker.schedule(context)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Schedule"
-                        )
-                        Text("Schedule Background Check (10 min)")
+                        Text("Install Health Connect")
                     }
                 }
+                !isBackgroundReadAvailable -> {
+                    Text(
+                        text = "Background reading is not available on this device. This feature requires Android 13 or newer and a compatible version of Health Connect.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                !hasBackgroundPermissions -> {
+                    Button(
+                        onClick = requestPermissions,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Request Background Permissions")
+                    }
+                }
+                else -> {
+                    // Settings for enabled background reading
+                    BackgroundReadSettings(healthConnectUploader)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Settings controls for background reading when enabled
+ */
+@Composable
+private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader) {
+    val syncFrequencyOptions = listOf("15 minutes", "30 minutes", "1 hour", "3 hours", "6 hours")
+    var selectedSyncFrequency by remember { mutableStateOf(syncFrequencyOptions[2]) }
+    var backgroundReadEnabled by remember { mutableStateOf(true) }
+
+    Column {
+        // Enable/disable switch
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Enable background reading",
+                style = MaterialTheme.typography.bodyLarge
+            )
+
+            Switch(
+                checked = backgroundReadEnabled,
+                onCheckedChange = { enabled ->
+                    backgroundReadEnabled = enabled
+                    // In a real app, this would update a preference or setting
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (backgroundReadEnabled) {
+            // Sync frequency dropdown
+            Text(
+                text = "Sync frequency",
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            ExposedDropdownMenuBox(
+                expanded = false,
+                onExpandedChange = { /* Would trigger dropdown */ }
+            ) {
+                OutlinedTextField(
+                    value = selectedSyncFrequency,
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = false) }
+                )
+
+                // Note: In the full implementation, this would be a real dropdown menu
+                // with options to select different sync frequencies
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Manual sync button
+            Button(
+                onClick = {
+                    // Would trigger immediate background sync
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Sync,
+                    contentDescription = "Sync Now"
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Sync Now")
             }
         }
     }
