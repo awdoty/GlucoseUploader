@@ -10,26 +10,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.health.connect.client.records.BloodGlucoseRecord
-import androidx.lifecycle.lifecycleScope
 import com.example.glucoseuploader.ui.theme.GlucoseUploaderTheme
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.time.Instant
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
-import java.util.*
 
 class CsvImportActivity : ComponentActivity() {
 
@@ -68,7 +51,7 @@ class CsvImportActivity : ComponentActivity() {
             return
         }
 
-        // Get file metadata
+        // Get file metadata for logging
         val fileName = getFileName(uri)
         val fileSize = getFileSize(uri)
         val fileType = contentResolver.getType(uri)
@@ -78,247 +61,27 @@ class CsvImportActivity : ComponentActivity() {
         Log.d(TAG, "File size: $fileSize bytes")
         Log.d(TAG, "File type: $fileType")
 
-        // Process the CSV file
+        // Process the CSV file using our composable
         setContent {
             GlucoseUploaderTheme {
-                CsvImportScreen(uri, fileName)
-            }
-        }
-    }
-
-    @Composable
-    fun CsvImportScreen(uri: Uri, fileName: String?) {
-        var isLoading by remember { mutableStateOf(true) }
-        var csvContent by remember { mutableStateOf<List<String>>(emptyList()) }
-        var detectedType by remember { mutableStateOf("Unknown") }
-        var readings by remember { mutableStateOf<List<GlucoseReading>>(emptyList()) }
-        var uploadStatus by remember { mutableStateOf("") }
-        var uploadProgress by remember { mutableStateOf(0f) }
-        var isUploading by remember { mutableStateOf(false) }
-        var selectedMealType by remember { mutableIntStateOf(BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN) }
-
-        // Load CSV data when the screen is composed
-        LaunchedEffect(uri) {
-            try {
-                val reader = CsvReader(this@CsvImportActivity)
-                val csvLines = reader.readCsvFile(uri)
-                csvContent = csvLines
-
-                // Parse the CSV content
-                val parseResult = reader.parseGenericCsvFormat(csvLines)
-                readings = parseResult
-                detectedType = reader.detectCsvType(csvLines)
-
-                isLoading = false
-            } catch (e: Exception) {
-                Log.e(TAG, "Error reading CSV", e)
-                Toast.makeText(this@CsvImportActivity, "Error reading CSV: ${e.message}", Toast.LENGTH_SHORT).show()
-                withContext(Dispatchers.Main) {
-                    finish()
-                }
-            }
-        }
-
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Import CSV",
-                    style = MaterialTheme.typography.headlineMedium
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // File info
-                fileName?.let {
-                    Text(text = "File: $it", style = MaterialTheme.typography.bodyLarge)
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                Text(text = "File Type: $detectedType", style = MaterialTheme.typography.bodyLarge)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (isLoading) {
-                    // Show loading spinner
-                    CircularProgressIndicator()
-                    Text(text = "Reading CSV...", style = MaterialTheme.typography.bodyLarge)
-                } else {
-                    // Show parsing results
-                    if (readings.isEmpty()) {
-                        Text(
-                            text = "No glucose readings found in the file",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    } else {
-                        Text(
-                            text = "Found ${readings.size} glucose readings",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Show a sample of readings
-                        readings.take(3).forEach { reading ->
-                            Text(
-                                text = "${reading.timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}: ${reading.value} mg/dL",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-
-                        if (readings.size > 3) {
-                            Text(
-                                text = "... and ${readings.size - 3} more",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Meal Type Selection
-                        Text(
-                            text = "Select Meal Type for Import",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Meal Type Dropdown
-                        var expanded by remember { mutableStateOf(false) }
-                        Box {
-                            Button(onClick = { expanded = true }) {
-                                Text(when (selectedMealType) {
-                                    BloodGlucoseRecord.RELATION_TO_MEAL_BEFORE_MEAL -> "Before Meal"
-                                    BloodGlucoseRecord.RELATION_TO_MEAL_AFTER_MEAL -> "After Meal"
-                                    BloodGlucoseRecord.RELATION_TO_MEAL_FASTING -> "Fasting"
-                                    BloodGlucoseRecord.RELATION_TO_MEAL_GENERAL -> "General"
-                                    else -> "Unknown Meal Type"
-                                })
+                CsvImportScreen(
+                    uri = uri,
+                    healthConnectUploader = healthConnectUploader,
+                    onImportComplete = { success, message ->
+                        if (success) {
+                            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                            // Add delay before finishing to show the toast
+                            android.os.Handler(mainLooper).postDelayed({
+                                finish()
+                            }, 2000)
+                        } else {
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                            if (message.contains("Error reading CSV")) {
+                                finish()
                             }
-                            DropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                text = { Text("Before Meal") },
-                                onClick = {
-                                    selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_BEFORE_MEAL
-                                    expanded = false
-                                }) {
-                                    Text("Before Meal")
-                                }
-                                DropdownMenuItem(onClick = {
-                                    selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_AFTER_MEAL
-                                    expanded = false
-                                }) {
-                                    Text("After Meal")
-                                }
-                                DropdownMenuItem(onClick = {
-                                    selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_FASTING
-                                    expanded = false
-                                }) {
-                                    Text("Fasting")
-                                }
-                                DropdownMenuItem(onClick = {
-                                    selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_GENERAL
-                                    expanded = false
-                                }) {
-                                    Text("General")
-                                }
-                                DropdownMenuItem(onClick = {
-                                    selectedMealType = BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN
-                                    expanded = false
-                                }) {
-                                    Text("Unknown")
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Upload button
-                        Button(
-                            onClick = {
-                                isUploading = true
-                                uploadProgress = 0f
-
-                                lifecycleScope.launch {
-                                    try {
-                                        uploadStatus = "Uploading readings..."
-
-                                        // Convert readings to doubles and get start/end times
-                                        val values = readings.map { it.value }
-                                        val startTime = readings.minByOrNull { it.timestamp }?.timestamp
-                                            ?: ZonedDateTime.now()
-                                        val endTime = readings.maxByOrNull { it.timestamp }?.timestamp
-                                            ?: ZonedDateTime.now()
-
-                                        // Create list of meal types for all readings
-                                        val mealTypes = List(readings.size) { selectedMealType }
-
-                                        // Upload the readings with progress tracking
-                                        healthConnectUploader.uploadGlucoseSeries(
-                                            values,
-                                            startTime,
-                                            endTime,
-                                            mealTypes
-                                        ) { current, total ->
-                                            uploadProgress = current.toFloat() / total.toFloat()
-                                            uploadStatus = "Uploaded $current of $total readings"
-                                        }
-
-                                        uploadStatus = "Successfully uploaded ${readings.size} readings"
-
-                                        // Auto-close after short delay
-                                        withContext(Dispatchers.Main) {
-                                            kotlinx.coroutines.delay(2000)
-                                            finish()
-                                        }
-                                    } catch (e: Exception) {
-                                        Log.e(TAG, "Error uploading readings", e)
-                                        uploadStatus = "Error: ${e.message}"
-                                    } finally {
-                                        isUploading = false
-                                    }
-                                }
-                            },
-                            enabled = !isUploading && readings.isNotEmpty(),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Upload ${readings.size} Readings")
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Cancel button
-                        OutlinedButton(
-                            onClick = { finish() },
-                            enabled = !isUploading,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Cancel")
-                        }
-
-                        // Show upload progress
-                        if (isUploading) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(text = uploadStatus)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            LinearProgressIndicator(
-                                progress = uploadProgress,
-                                modifier = Modifier.fillMaxWidth()
-                            )
                         }
                     }
-                }
+                )
             }
         }
     }

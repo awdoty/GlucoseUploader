@@ -168,7 +168,9 @@ class CsvReader(private val context: Context) {
                                 }
                             }
 
-                            readings.add(GlucoseReading(value, timestamp))
+                            if (timestamp != null) {
+                                readings.add(GlucoseReading(value, timestamp))
+                            }
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Error parsing line: $line", e)
@@ -184,6 +186,7 @@ class CsvReader(private val context: Context) {
             return emptyList()
         }
     }
+
     /**
      * Try to parse a date-time string with different common formats
      */
@@ -520,4 +523,3 @@ class CsvReader(private val context: Context) {
 
         return result.map { it.trim('"', ' ') }
     }
-}

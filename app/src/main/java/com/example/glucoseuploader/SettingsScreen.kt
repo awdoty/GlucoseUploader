@@ -2,13 +2,11 @@ package com.example.glucoseuploader
 
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
@@ -18,11 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.health.connect.client.records.BloodGlucoseRecord
 import kotlinx.coroutines.launch
-import java.time.format.DateTimeFormatter
-import java.time.ZoneId
 
 /**
  * Settings screen for app configuration
@@ -37,24 +32,34 @@ fun SettingsScreen(
     val scrollState = rememberScrollState()
 
     // Get shared preferences
-    val prefs = remember { context.getSharedPreferences("GlucoseUploaderPrefs", Context.MODE_PRIVATE) }
+    val prefs = remember { context.getSharedPreferences(PreferenceConstants.PREFERENCES_NAME, Context.MODE_PRIVATE) }
 
     // State variables for settings
-    var backgroundCheckEnabled by remember { mutableStateOf(prefs.getBoolean(PREF_BACKGROUND_CHECK_ENABLED, false)) }
-    var backgroundCheckInterval by remember { mutableIntStateOf(prefs.getInt(PREF_BACKGROUND_CHECK_INTERVAL, 12)) }
-    var defaultMealType by remember { mutableIntStateOf(prefs.getInt(PREF_DEFAULT_MEAL_TYPE, BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN)) }
-    var showNotifications by remember { mutableStateOf(prefs.getBoolean(PREF_SHOW_NOTIFICATIONS, true)) }
-    var detailedAnalysis by remember { mutableStateOf(prefs.getBoolean(PREF_DETAILED_ANALYSIS, true)) }
+    var backgroundCheckEnabled by remember {
+        mutableStateOf(prefs.getBoolean(PreferenceConstants.PREF_BACKGROUND_CHECK_ENABLED, false))
+    }
+    var backgroundCheckInterval by remember {
+        mutableIntStateOf(prefs.getInt(PreferenceConstants.PREF_BACKGROUND_CHECK_INTERVAL, 12))
+    }
+    var defaultMealType by remember {
+        mutableIntStateOf(prefs.getInt(PreferenceConstants.PREF_DEFAULT_MEAL_TYPE, BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN))
+    }
+    var showNotifications by remember {
+        mutableStateOf(prefs.getBoolean(PreferenceConstants.PREF_SHOW_NOTIFICATIONS, true))
+    }
+    var detailedAnalysis by remember {
+        mutableStateOf(prefs.getBoolean(PreferenceConstants.PREF_DETAILED_ANALYSIS, true))
+    }
     var isHealthConnectAvailable by remember { mutableStateOf(false) }
     var hasPermissions by remember { mutableStateOf(false) }
     var healthConnectVersion by remember { mutableStateOf<String?>(null) }
-    var isChecking by remember { mutableStateOf(false) }
+    var isChecking by remember { mutableStateOf(true) }
 
     // Check Health Connect availability
-    LaunchedEffect(key1 = Unit) {
-        isChecking = true
+    LaunchedEffect(Unit) {
         try {
             isHealthConnectAvailable = healthConnectUploader.isHealthConnectAvailable()
+
             if (isHealthConnectAvailable) {
                 hasPermissions = healthConnectUploader.hasPermissions()
                 healthConnectVersion = healthConnectUploader.getHealthConnectVersion()
@@ -81,18 +86,119 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Health Connect Status Section
-        HealthConnectStatusCard(
-            isHealthConnectAvailable = isHealthConnectAvailable,
-            hasPermissions = hasPermissions,
-            healthConnectVersion = healthConnectVersion,
-            requestPermissions = requestPermissions,
-            onOpenHealthConnect = {
-                coroutineScope.launch {
-                    healthConnectUploader.openHealthConnectApp(context)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isHealthConnectAvailable && hasPermissions)
+                    Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Health Connect Status",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (isChecking) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.CenterHorizontally),
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = "Checking Health Connect status...",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isHealthConnectAvailable) Icons.Default.CheckCircle else Icons.Default.Error,
+                            contentDescription = if (isHealthConnectAvailable) "Available" else "Not Available",
+                            tint = if (isHealthConnectAvailable) Color.Green else Color.Red
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isHealthConnectAvailable) "Health Connect Available" else "Health Connect Not Available",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+
+                    if (isHealthConnectAvailable) {
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Show version if available
+                        healthConnectVersion?.let {
+                            Text(
+                                text = "Version: $it",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Show permissions status
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (hasPermissions) Icons.Default.CheckCircle else Icons.Default.Error,
+                                contentDescription = if (hasPermissions) "Granted" else "Not Granted",
+                                tint = if (hasPermissions) Color.Green else Color.Red
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (hasPermissions) "Permissions Granted" else "Permissions Required",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (!hasPermissions) {
+                            Button(
+                                onClick = requestPermissions,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Request Permissions")
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    healthConnectUploader.openHealthConnectApp(context)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Open Health Connect")
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Button(
+                            onClick = {
+                                coroutineScope.launch {
+                                    healthConnectUploader.openHealthConnectApp(context)
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Install Health Connect")
+                        }
+                    }
                 }
-            },
-            isChecking = isChecking
-        )
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -122,7 +228,7 @@ fun SettingsScreen(
                         checked = backgroundCheckEnabled,
                         onCheckedChange = {
                             backgroundCheckEnabled = it
-                            savePreference(prefs, PREF_BACKGROUND_CHECK_ENABLED, it)
+                            PreferenceHelpers.saveBoolean(prefs, PreferenceConstants.PREF_BACKGROUND_CHECK_ENABLED, it)
 
                             // Schedule or cancel background work
                             if (it) {
@@ -152,7 +258,7 @@ fun SettingsScreen(
                         value = backgroundCheckInterval.toFloat(),
                         onValueChange = {
                             backgroundCheckInterval = it.toInt()
-                            savePreference(prefs, PREF_BACKGROUND_CHECK_INTERVAL, it.toInt())
+                            PreferenceHelpers.saveInt(prefs, PreferenceConstants.PREF_BACKGROUND_CHECK_INTERVAL, it.toInt())
                         },
                         valueRange = 1f..24f,
                         steps = 5,
@@ -186,7 +292,7 @@ fun SettingsScreen(
                             checked = showNotifications,
                             onCheckedChange = {
                                 showNotifications = it
-                                savePreference(prefs, PREF_SHOW_NOTIFICATIONS, it)
+                                PreferenceHelpers.saveBoolean(prefs, PreferenceConstants.PREF_SHOW_NOTIFICATIONS, it)
                             }
                         )
                     }
@@ -202,7 +308,7 @@ fun SettingsScreen(
                             checked = detailedAnalysis,
                             onCheckedChange = {
                                 detailedAnalysis = it
-                                savePreference(prefs, PREF_DETAILED_ANALYSIS, it)
+                                PreferenceHelpers.saveBoolean(prefs, PreferenceConstants.PREF_DETAILED_ANALYSIS, it)
                             }
                         )
                     }
@@ -244,9 +350,6 @@ fun SettingsScreen(
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
                 Text(
                     text = "Default Meal Type",
                     style = MaterialTheme.typography.titleLarge,
@@ -283,7 +386,7 @@ fun SettingsScreen(
                                 selected = defaultMealType == type,
                                 onClick = {
                                     defaultMealType = type
-                                    savePreference(prefs, PREF_DEFAULT_MEAL_TYPE, type)
+                                    PreferenceHelpers.saveInt(prefs, PreferenceConstants.PREF_DEFAULT_MEAL_TYPE, type)
                                 }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -297,13 +400,10 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // About Section
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
@@ -348,13 +448,13 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Debug Section
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
                 Text(
                     text = "Advanced Options",
                     style = MaterialTheme.typography.titleLarge,
@@ -409,153 +509,3 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
-
-/**
- * Card showing Health Connect status
- */
-@Composable
-fun HealthConnectStatusCard(
-    isHealthConnectAvailable: Boolean,
-    hasPermissions: Boolean,
-    healthConnectVersion: String?,
-    requestPermissions: () -> Unit,
-    onOpenHealthConnect: () -> Unit,
-    isChecking: Boolean
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isHealthConnectAvailable && hasPermissions)
-                Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = "Health Connect Status",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (isChecking) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .align(Alignment.CenterHorizontally),
-                    strokeWidth = 2.dp
-                )
-                Text(
-                    text = "Checking Health Connect status...",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            } else {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = if (isHealthConnectAvailable) Icons.Default.CheckCircle else Icons.Default.Error,
-                        contentDescription = if (isHealthConnectAvailable) "Available" else "Not Available",
-                        tint = if (isHealthConnectAvailable) Color.Green else Color.Red
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isHealthConnectAvailable) "Health Connect Available" else "Health Connect Not Available",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-
-                if (isHealthConnectAvailable) {
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Show version if available
-                    healthConnectVersion?.let {
-                        Text(
-                            text = "Version: $it",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Show permissions status
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (hasPermissions) Icons.Default.CheckCircle else Icons.Default.Error,
-                            contentDescription = if (hasPermissions) "Granted" else "Not Granted",
-                            tint = if (hasPermissions) Color.Green else Color.Red
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (hasPermissions) "Permissions Granted" else "Permissions Required",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    if (!hasPermissions) {
-                        Button(
-                            onClick = requestPermissions,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Request Permissions")
-                        }
-                    }
-
-                    Button(
-                        onClick = onOpenHealthConnect,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Open Health Connect")
-                    }
-                } else {
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Button(
-                        onClick = onOpenHealthConnect,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Install Health Connect")
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Helper function to save boolean preference
- */
-private fun savePreference(prefs: SharedPreferences, key: String, value: Boolean) {
-    prefs.edit().putBoolean(key, value).apply()
-}
-
-/**
- * Helper function to save integer preference
- */
-private fun savePreference(prefs: SharedPreferences, key: String, value: Int) {
-    prefs.edit().putInt(key, value).apply()
-}
-
-/**
- * Helper function to save string preference
- */
-private fun savePreference(prefs: SharedPreferences, key: String, value: String) {
-    prefs.edit().putString(key, value).apply()
-}
-
-// Preference keys
-private const val PREF_BACKGROUND_CHECK_ENABLED = "background_check_enabled"
-private const val PREF_BACKGROUND_CHECK_INTERVAL = "background_check_interval"
-private const val PREF_DEFAULT_MEAL_TYPE = "default_meal_type"
-private const val PREF_SHOW_NOTIFICATIONS = "show_notifications"
-private const val PREF_DETAILED_ANALYSIS = "detailed_analysis"

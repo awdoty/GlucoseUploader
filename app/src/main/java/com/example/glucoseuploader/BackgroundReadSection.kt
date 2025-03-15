@@ -57,7 +57,7 @@ fun BackgroundReadSection(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -194,7 +194,6 @@ private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader)
                 checked = backgroundReadEnabled,
                 onCheckedChange = { enabled ->
                     backgroundReadEnabled = enabled
-                    // In a real app, this would update a preference or setting
                 }
             )
         }
@@ -210,31 +209,20 @@ private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader)
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            ExposedDropdownMenuBox(
-                expanded = false,
-                onExpandedChange = { /* Would trigger dropdown */ }
-            ) {
-                OutlinedTextField(
-                    value = selectedSyncFrequency,
-                    onValueChange = {},
-                    readOnly = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(),
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = false) }
-                )
-
-                // Note: In the full implementation, this would be a real dropdown menu
-                // with options to select different sync frequencies
-            }
+            // Simple dropdown replacement since ExposedDropdownMenu is experimental
+            OutlinedTextField(
+                value = selectedSyncFrequency,
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Frequency") }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Manual sync button
             Button(
-                onClick = {
-                    // Would trigger immediate background sync
-                },
+                onClick = {},
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(

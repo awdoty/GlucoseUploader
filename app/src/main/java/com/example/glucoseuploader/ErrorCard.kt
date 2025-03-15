@@ -17,8 +17,10 @@ import androidx.compose.ui.unit.dp
 fun ErrorCard(errorMessage: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        containerColor = Color(0xFFFFEEEE),
-        elevation = 4.dp
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFFFEEEE)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
