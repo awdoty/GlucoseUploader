@@ -492,7 +492,9 @@ class HealthConnectUploader(val context: Context) {
                     }
                 }
                 else -> {
-                    result.add("Change: ${change.javaClass.simpleName} - ${change.uuid}")
+                    // Fixed the reference to uuid by using a different approach to identify the change
+                    val changeId = change.toString().substringAfterLast("id=").substringBefore(")")
+                    result.add("Change: ${change.javaClass.simpleName} - $changeId")
                 }
             }
         }

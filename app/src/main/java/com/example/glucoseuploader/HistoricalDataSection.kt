@@ -131,7 +131,6 @@ fun HistoricalDataSection(
                         if (isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colors.onPrimary,
                                 strokeWidth = 2.dp
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -194,7 +193,7 @@ fun HistoricalDataSection(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 4.dp),
-                                        elevation = 2.dp
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                     ) {
                                         Column(
                                             modifier = Modifier.padding(8.dp)

@@ -187,7 +187,7 @@ fun GlucoseChangesTrackingScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)

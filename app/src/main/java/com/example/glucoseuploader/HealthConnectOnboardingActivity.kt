@@ -149,17 +149,24 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
                         HealthPermission.getWritePermission(BloodGlucoseRecord::class)
                     )
 
-                    // Request permissions
-                    val contract = client.permissionController.createRequestPermissionResultContract()
-                    val permissionLauncher = registerForActivityResult(contract) { granted ->
-                        if (granted.containsAll(permissions)) {
-                            Log.d(TAG, "All permissions granted")
-                        } else {
-                            Log.d(TAG, "Some permissions denied")
-                        }
-                    }
+                    // Request permissions - use a simpler approach to work around API limitations
+                    try {
+                        // Try to use direct permission request if available
+                        val permissionController = client.permissionController
 
-                    permissionLauncher.launch(permissions)
+                        // Simplified approach - just launch the permission UI directly
+                        val intent = Intent("android.health.connect.action.REQUEST_PERMISSIONS")
+                        intent.putExtra(
+                            "android.health.connect.extra.REQUEST_PERMISSIONS",
+                            permissions.toTypedArray()
+                        )
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error with permission API, trying alternative approach", e)
+
+                        // Fallback - open Health Connect settings
+                        healthConnectUploader.openHealthConnectApp(this@HealthConnectOnboardingActivity)
+                    }
                 } else {
                     Log.e(TAG, "Health Connect client is null")
                 }

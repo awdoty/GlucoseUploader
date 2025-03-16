@@ -107,7 +107,7 @@ fun GlucoseStatisticsScreen(
         if (!isHealthConnectAvailable) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                containerColor = Color(0xFFFFF3E0)
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -125,7 +125,9 @@ fun GlucoseStatisticsScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = {
-                            healthConnectUploader.openHealthConnectApp(healthConnectUploader.context)
+                            coroutineScope.launch {
+                                healthConnectUploader.openHealthConnectApp(healthConnectUploader.context)
+                            }
                         }
                     ) {
                         Text("Install Health Connect")
@@ -135,7 +137,7 @@ fun GlucoseStatisticsScreen(
         } else if (!hasPermissions) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                containerColor = Color(0xFFF1F8E9)
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F8E9))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -301,7 +303,7 @@ fun GlucoseStatisticsScreen(
             Spacer(modifier = Modifier.height(16.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -332,8 +334,8 @@ fun GlucoseStatisticsScreen(
 fun StatisticsCard(statistics: GlucoseStatistics) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = 2.dp,
-        containerColor = Color(0xFFF5F5F5)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

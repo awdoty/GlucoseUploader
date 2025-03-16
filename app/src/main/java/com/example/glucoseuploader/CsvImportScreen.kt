@@ -10,7 +10,10 @@ import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.records.BloodGlucoseRecord
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 /**
  * Composable function for CSV import screen that can be used in any activity or composable
@@ -238,7 +241,7 @@ fun CsvImportScreen(
                         Text(text = uploadStatus)
                         Spacer(modifier = Modifier.height(8.dp))
                         LinearProgressIndicator(
-                            progress = { uploadProgress },
+                            progress = uploadProgress,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
