@@ -38,7 +38,7 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
     fun OnboardingScreen() {
         var isHealthConnectAvailable by remember { mutableStateOf(false) }

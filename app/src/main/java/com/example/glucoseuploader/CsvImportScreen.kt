@@ -18,7 +18,7 @@ import java.time.format.DateTimeParseException
 /**
  * Composable function for CSV import screen that can be used in any activity or composable
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun CsvImportScreen(
     uri: Uri,
@@ -100,7 +100,7 @@ fun CsvImportScreen(
                     // Show a sample of readings
                     readings.take(3).forEach { reading ->
                         Text(
-                            text = "${reading.timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}: ${reading.value} mg/dL",
+                            text = "${reading.dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}: ${reading.value} mg/dL",
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
@@ -190,9 +190,9 @@ fun CsvImportScreen(
 
                                     // Convert readings to doubles and get start/end times
                                     val values = readings.map { it.value }
-                                    val startTime = readings.minByOrNull { it.timestamp }?.timestamp
+                                    val startTime = readings.minByOrNull { it.dateTime }?.dateTime
                                         ?: ZonedDateTime.now()
-                                    val endTime = readings.maxByOrNull { it.timestamp }?.timestamp
+                                    val endTime = readings.maxByOrNull { it.dateTime }?.dateTime
                                         ?: ZonedDateTime.now()
 
                                     // Create list of meal types for all readings

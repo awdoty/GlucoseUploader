@@ -28,7 +28,7 @@ class PermissionsRationaleActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
     fun PermissionsRationaleScreen() {
         val permissions = listOf(
@@ -87,7 +87,7 @@ class PermissionsRationaleActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
     fun PermissionCard(permission: PermissionExplanation) {
         Card(

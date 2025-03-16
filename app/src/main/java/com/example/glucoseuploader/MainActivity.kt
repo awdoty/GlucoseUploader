@@ -274,7 +274,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
-    @OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
     fun GlucoseUploaderApp(
         healthConnectUploader: HealthConnectUploader,

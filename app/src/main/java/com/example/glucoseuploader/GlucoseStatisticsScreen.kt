@@ -24,7 +24,7 @@ import java.time.temporal.ChronoUnit
 /**
  * Screen for displaying glucose statistics
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun GlucoseStatisticsScreen(
     healthConnectUploader: HealthConnectUploader,
@@ -331,7 +331,7 @@ fun GlucoseStatisticsScreen(
 /**
  * Card to display statistics
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun StatisticsCard(statistics: GlucoseStatistics) {
     Card(
@@ -395,7 +395,7 @@ fun StatisticsCard(statistics: GlucoseStatistics) {
 /**
  * Simple date selector
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun DateSelector(
     selectedDate: LocalDate,

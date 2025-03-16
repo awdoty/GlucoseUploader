@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 /**
  * Settings screen for app configuration
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun SettingsScreen(
     healthConnectUploader: HealthConnectUploader,

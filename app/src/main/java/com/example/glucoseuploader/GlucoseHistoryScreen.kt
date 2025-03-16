@@ -23,7 +23,7 @@ import java.time.temporal.ChronoUnit
 /**
  * Screen that shows glucose history from Health Connect
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun GlucoseHistoryScreen(
     healthConnectUploader: HealthConnectUploader,
@@ -169,7 +169,7 @@ private suspend fun loadGlucoseData(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun GlucoseRecordsList(records: List<BloodGlucoseRecord>, packageName: String) {
     LazyColumn(
@@ -182,7 +182,7 @@ private fun GlucoseRecordsList(records: List<BloodGlucoseRecord>, packageName: S
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun GlucoseRecordItem(record: BloodGlucoseRecord, packageName: String) {
     val localDateTime = record.time
@@ -243,7 +243,7 @@ private fun GlucoseRecordItem(record: BloodGlucoseRecord, packageName: String) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun LoadingIndicator() {
     Box(
@@ -254,7 +254,7 @@ private fun LoadingIndicator() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun NoDataMessage() {
     Box(
@@ -270,7 +270,7 @@ private fun NoDataMessage() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun ErrorMessage(message: String, onRetry: () -> Unit) {
     Card(
@@ -306,7 +306,7 @@ private fun ErrorMessage(message: String, onRetry: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun HealthConnectNotAvailableMessage(onInstallClick: () -> Unit) {
     Card(
@@ -340,7 +340,7 @@ private fun HealthConnectNotAvailableMessage(onInstallClick: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun PermissionsRequiredMessage(onRequestPermissions: () -> Unit) {
     Card(

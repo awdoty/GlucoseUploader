@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter
 /**
  * Screen for tracking changes to glucose readings in Health Connect
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun GlucoseChangesTrackingScreen(
     healthConnectUploader: HealthConnectUploader

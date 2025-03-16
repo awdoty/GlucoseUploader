@@ -543,8 +543,8 @@ suspend fun readCsvFile(context: Context, uri: Uri): List<GlucoseData> {
         is GlucoseCsvUtilities.GlucoseFileResult.Success -> {
             // Convert to GlucoseData objects
             result.readings.map { reading ->
-                val date = reading.timestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                val time = reading.timestamp.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+                val date = reading.dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                val time = reading.dateTime.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
 
                 GlucoseData(
                     glucose = reading.value.toString(),

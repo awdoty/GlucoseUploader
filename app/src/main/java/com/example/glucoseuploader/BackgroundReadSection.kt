@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 /**
  * UI component that shows background reading options and status
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun BackgroundReadSection(
     healthConnectUploader: HealthConnectUploader,
@@ -173,7 +173,7 @@ fun BackgroundReadSection(
 /**
  * Settings controls for background reading when enabled
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader) {
     val syncFrequencyOptions = listOf("15 minutes", "30 minutes", "1 hour", "3 hours", "6 hours")

@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 /**
  * Reusable error card component
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun ErrorCard(errorMessage: String) {
     Card(

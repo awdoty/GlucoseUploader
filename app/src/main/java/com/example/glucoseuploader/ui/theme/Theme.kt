@@ -24,11 +24,11 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Purple700
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun GlucoseUploaderTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @OptIn(ExperimentalMaterial3Api::class)
+    content:
 @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme

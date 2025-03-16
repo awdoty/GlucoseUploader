@@ -45,7 +45,7 @@ data class FileImportState(
 /**
  * Screen for importing glucose data from multiple CSV files
  */
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun MultiFileImportScreen(
     uris: List<Uri>,
@@ -282,7 +282,7 @@ fun MultiFileImportScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun FileImportItem(
     fileState: FileImportState,
