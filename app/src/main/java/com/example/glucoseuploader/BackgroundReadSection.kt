@@ -12,10 +12,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
-/**
- * UI component that shows background reading options and status
- */
-
 @Composable
 fun BackgroundReadSection(
     healthConnectUploader: HealthConnectUploader,
@@ -23,14 +19,12 @@ fun BackgroundReadSection(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
-    // State management
     var isBackgroundReadAvailable by remember { mutableStateOf(false) }
     var hasBackgroundPermissions by remember { mutableStateOf(false) }
     var isHealthConnectAvailable by remember { mutableStateOf(false) }
     var isCheckingStatus by remember { mutableStateOf(true) }
     var statusMessage by remember { mutableStateOf("Checking background read availability...") }
 
-    // Check status on first load
     LaunchedEffect(Unit) {
         try {
             isHealthConnectAvailable = healthConnectUploader.isHealthConnectAvailable()
@@ -90,7 +84,6 @@ fun BackgroundReadSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Status indicator
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -128,7 +121,6 @@ fun BackgroundReadSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Conditional buttons based on status
             when {
                 isCheckingStatus -> {
                     CircularProgressIndicator(
@@ -162,17 +154,12 @@ fun BackgroundReadSection(
                     }
                 }
                 else -> {
-                    // Settings for enabled background reading
                     BackgroundReadSettings(healthConnectUploader)
                 }
             }
         }
     }
 }
-
-/**
- * Settings controls for background reading when enabled
- */
 
 @Composable
 private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader) {
@@ -181,7 +168,6 @@ private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader)
     var backgroundReadEnabled by remember { mutableStateOf(true) }
 
     Column {
-        // Enable/disable switch
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -203,7 +189,6 @@ private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader)
         Spacer(modifier = Modifier.height(8.dp))
 
         if (backgroundReadEnabled) {
-            // Sync frequency dropdown
             Text(
                 text = "Sync frequency",
                 style = MaterialTheme.typography.bodyMedium
@@ -211,7 +196,6 @@ private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader)
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Simple dropdown replacement since ExposedDropdownMenu is experimental
             OutlinedTextField(
                 value = selectedSyncFrequency,
                 onValueChange = {},
@@ -222,9 +206,14 @@ private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader)
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Manual sync button
             Button(
-                onClick = {},
+                onClick = {
+                    // TODO: Add real sync
+                    //coroutineScope.launch {
+                    //    healthConnectUploader.syncHealthConnectData()
+                    //}
+                    //println("Sync now clicked")
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(

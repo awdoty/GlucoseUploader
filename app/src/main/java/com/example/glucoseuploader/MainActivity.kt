@@ -274,8 +274,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
-
-@Composable
+    @Composable
     fun GlucoseUploaderApp(
         healthConnectUploader: HealthConnectUploader,
         requestPermissions: () -> Unit
@@ -319,7 +318,6 @@ class MainActivity : ComponentActivity() {
         }
 
         // Regular app UI when not handling shared files
-        @OptIn(ExperimentalMaterial3Api::class)
         Scaffold(
             topBar = {
                 TopAppBar(
