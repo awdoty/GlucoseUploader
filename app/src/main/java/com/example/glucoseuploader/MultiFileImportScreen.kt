@@ -17,12 +17,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+
+/**
+ * Define file status enum
+ */
+enum class Status {
+    PENDING, LOADING, SUCCESS, ERROR
+}
+
+/**
+ * Data class to track file processing state
+ */
+data class FileImportState(
+    val uri: Uri,
+    val filename: String,
+    val status: Status = Status.PENDING,
+    val message: String = "",
+    val glucoseData: List<GlucoseData> = emptyList()
+)
 
 /**
  * Screen for importing glucose data from multiple CSV files
@@ -38,20 +56,6 @@ fun MultiFileImportScreen(
 
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    // Track file processing state
-    data class FileImportState(
-        val uri: Uri,
-        val filename: String,
-        var status: Status = Status.PENDING,
-        var message: String = "",
-        var glucoseData: List<GlucoseData> = emptyList()
-    )
-
-    enum class Status {
-        PENDING, LOADING, SUCCESS, ERROR
-    }
-
     var fileImportStates by remember { mutableStateOf<List<FileImportState>>(emptyList()) }
     var isUploading by remember { mutableStateOf(false) }
 
@@ -59,7 +63,7 @@ fun MultiFileImportScreen(
     LaunchedEffect(uris) {
         val states = uris.map { uri ->
             val filename = getFilenameFromUri(context, uri)
-            FileImportState(uri, filename)
+            FileImportState(uri = uri, filename = filename)
         }
         fileImportStates = states
         isLoading = false
@@ -242,7 +246,7 @@ fun MultiFileImportScreen(
                                             }
 
                                             // Wait a bit for user to see the results
-                                            kotlinx.coroutines.delay(1500)
+                                            delay(1500)
 
                                             onImportComplete(
                                                 successCount,
@@ -251,11 +255,7 @@ fun MultiFileImportScreen(
                                             )
                                         } catch (e: Exception) {
                                             errorMessage = "Error during batch upload: ${e.message}"
-                                            onImportComplete(
-                                                successCount,
-                                                uris.size,
-                                                "Error: ${e.message}"
-                                            )
+                                            onImportComplete(0, uris.size, "Error: ${e.message}")
                                         } finally {
                                             isUploading = false
                                         }
@@ -266,7 +266,7 @@ fun MultiFileImportScreen(
                                 if (isUploading) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(24.dp),
-                                        color = MaterialTheme.colors.onPrimary,
+                                        color = MaterialTheme.colorScheme.onPrimary,
                                         strokeWidth = 2.dp
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
@@ -283,21 +283,21 @@ fun MultiFileImportScreen(
 
 @Composable
 fun FileImportItem(
-    fileState: MultiFileImportScreen.FileImportState,
+    fileState: FileImportState,
     onPreview: () -> Unit
 ) {
     val statusColor = when(fileState.status) {
-        MultiFileImportScreen.Status.PENDING -> Color.Gray
-        MultiFileImportScreen.Status.LOADING -> MaterialTheme.colorScheme.primary
-        MultiFileImportScreen.Status.SUCCESS -> Color.Green
-        MultiFileImportScreen.Status.ERROR -> Color.Red
+        Status.PENDING -> Color.Gray
+        Status.LOADING -> MaterialTheme.colorScheme.primary
+        Status.SUCCESS -> Color.Green
+        Status.ERROR -> Color.Red
     }
 
     val statusIcon = when(fileState.status) {
-        MultiFileImportScreen.Status.PENDING -> Icons.Default.Info
-        MultiFileImportScreen.Status.LOADING -> null // Show loader instead
-        MultiFileImportScreen.Status.SUCCESS -> Icons.Default.CheckCircle
-        MultiFileImportScreen.Status.ERROR -> Icons.Default.Error
+        Status.PENDING -> Icons.Default.Info
+        Status.LOADING -> null // Show loader instead
+        Status.SUCCESS -> Icons.Default.CheckCircle
+        Status.ERROR -> Icons.Default.Error
     }
 
     Row(
@@ -311,7 +311,7 @@ fun FileImportItem(
             modifier = Modifier.size(24.dp),
             contentAlignment = Alignment.Center
         ) {
-            if (fileState.status == MultiFileImportScreen.Status.LOADING) {
+            if (fileState.status == Status.LOADING) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
                     strokeWidth = 2.dp
@@ -356,12 +356,12 @@ fun FileImportItem(
         }
 
         // Preview button - only for pending files
-        if (fileState.status == MultiFileImportScreen.Status.PENDING) {
+        if (fileState.status == Status.PENDING) {
             Button(
                 onClick = onPreview,
                 modifier = Modifier.padding(start = 8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryVariant
+                    containerColor = MaterialTheme.colorScheme.secondary
                 )
             ) {
                 Text("Preview")
@@ -399,16 +399,16 @@ private fun getFilenameFromUri(context: Context, uri: Uri): String {
 private suspend fun previewFile(
     context: Context,
     uri: Uri,
-    onStateUpdate: (MultiFileImportScreen.FileImportState) -> Unit
+    onStateUpdate: (FileImportState) -> Unit
 ) {
     try {
         // Update to loading state
         val filename = getFilenameFromUri(context, uri)
         onStateUpdate(
-            MultiFileImportScreen.FileImportState(
+            FileImportState(
                 uri = uri,
                 filename = filename,
-                status = MultiFileImportScreen.Status.LOADING
+                status = Status.LOADING
             )
         )
 
@@ -417,20 +417,20 @@ private suspend fun previewFile(
 
         if (glucoseData.isNotEmpty()) {
             onStateUpdate(
-                MultiFileImportScreen.FileImportState(
+                FileImportState(
                     uri = uri,
                     filename = filename,
-                    status = MultiFileImportScreen.Status.PENDING,
+                    status = Status.PENDING,
                     message = "Ready to import ${glucoseData.size} readings",
                     glucoseData = glucoseData
                 )
             )
         } else {
             onStateUpdate(
-                MultiFileImportScreen.FileImportState(
+                FileImportState(
                     uri = uri,
                     filename = filename,
-                    status = MultiFileImportScreen.Status.ERROR,
+                    status = Status.ERROR,
                     message = "No glucose readings found in file"
                 )
             )
@@ -438,10 +438,10 @@ private suspend fun previewFile(
     } catch (e: Exception) {
         val filename = getFilenameFromUri(context, uri)
         onStateUpdate(
-            MultiFileImportScreen.FileImportState(
+            FileImportState(
                 uri = uri,
                 filename = filename,
-                status = MultiFileImportScreen.Status.ERROR,
+                status = Status.ERROR,
                 message = "Error reading file: ${e.message}"
             )
         )
@@ -461,8 +461,7 @@ private suspend fun uploadGlucoseReadings(
         try {
             // Parse date and time
             val dateTimeStr = "${data.date} ${data.time}"
-            // Try different common date formats
-            val dateTime = tryParseDateTime(dateTimeStr)
+            val dateTime = com.example.glucoseuploader.tryParseDateTime(dateTimeStr)
 
             // Convert to ZonedDateTime
             val zonedDateTime = ZonedDateTime.of(

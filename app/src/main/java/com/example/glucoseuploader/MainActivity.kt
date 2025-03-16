@@ -316,6 +316,7 @@ class MainActivity : ComponentActivity() {
         }
 
         // Regular app UI when not handling shared files
+        @OptIn(ExperimentalMaterial3Api::class)
         Scaffold(
             topBar = {
                 TopAppBar(
