@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:name=".GlucoseUploaderApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -20,6 +21,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.GlucoseUploader"
+        android:enableOnBackInvokedCallback="true"
         tools:targetApi="31">
 
         <!-- Main Activity -->
@@ -30,31 +32,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-            <!-- Intent filter for file handling - enables app to show up in sharing menus -->
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/csv" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="application/vnd.ms-excel" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="application/octet-stream" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:mimeType="text/csv" />
-                <data android:mimeType="application/vnd.ms-excel" />
-                <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
 
@@ -69,14 +46,36 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
                 <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/csv" />
+                <data android:mimeType="application/x-csv" />
                 <data android:mimeType="application/octet-stream" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
             </intent-filter>
+
+            <!-- Intent filter for sharing files from other apps - this is crucial for your use case -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
                 <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/csv" />
+                <data android:mimeType="application/x-csv" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+
+            <!-- For handling multiple files at once -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/csv" />
+                <data android:mimeType="application/x-csv" />
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
@@ -92,23 +91,22 @@
             android:name=".PermissionsRationaleActivity"
             android:exported="true"
             android:theme="@style/Theme.GlucoseUploader">
-            <!-- Intent filter for Health Connect permissions rationale -->
             <intent-filter>
                 <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
             </intent-filter>
-            <!-- Permission handling for Android 14 -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW_PERMISSION_USAGE"/>
                 <category android:name="android.intent.category.HEALTH_PERMISSIONS"/>
             </intent-filter>
         </activity>
 
-        <!-- Worker initialization -->
+        <!-- This is important for WorkManager initialization -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
+            <!-- Remove the default initialization of WorkManager -->
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"
@@ -120,8 +118,6 @@
     <!-- Queries section for Health Connect data access -->
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
-
-        <!-- Required to resolve packages that have written Health Connect data -->
         <intent>
             <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
         </intent>
