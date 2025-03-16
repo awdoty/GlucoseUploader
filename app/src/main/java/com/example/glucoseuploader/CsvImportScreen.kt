@@ -18,6 +18,7 @@ import java.time.format.DateTimeParseException
 /**
  * Composable function for CSV import screen that can be used in any activity or composable
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CsvImportScreen(
     uri: Uri,

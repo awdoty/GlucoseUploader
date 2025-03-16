@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter
 /**
  * Main screen for uploading glucose readings
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GlucoseUploaderScreen(
     healthConnectUploader: HealthConnectUploader,

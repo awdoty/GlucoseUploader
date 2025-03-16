@@ -45,6 +45,7 @@ data class FileImportState(
 /**
  * Screen for importing glucose data from multiple CSV files
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MultiFileImportScreen(
     uris: List<Uri>,
@@ -281,6 +282,7 @@ fun MultiFileImportScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FileImportItem(
     fileState: FileImportState,
@@ -461,9 +463,9 @@ private suspend fun uploadGlucoseReadings(
         try {
             // Parse date and time
             val dateTimeStr = "${data.date} ${data.time}"
-            val dateTime = com.example.glucoseuploader.tryParseDateTime(dateTimeStr)
+            val dateTime = tryParseDateTime(dateTimeStr)  // Call the function to get dateTime
 
-            // Convert to ZonedDateTime
+// Convert to ZonedDateTime
             val zonedDateTime = ZonedDateTime.of(
                 dateTime,
                 ZoneId.systemDefault()

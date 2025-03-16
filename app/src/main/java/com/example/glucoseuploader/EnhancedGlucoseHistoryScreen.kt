@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 /**
  * Enhanced screen that combines recent glucose history with historical data access
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnhancedGlucoseHistoryScreen(
     healthConnectUploader: HealthConnectUploader,

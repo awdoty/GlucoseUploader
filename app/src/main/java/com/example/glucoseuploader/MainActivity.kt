@@ -34,6 +34,7 @@ import com.example.glucoseuploader.ui.theme.GlucoseUploaderTheme
 import kotlinx.coroutines.launch
 import java.io.FileNotFoundException
 import java.time.Instant
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
@@ -272,7 +273,9 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
     }
 
-    @Composable
+    @OptIn(ExperimentalMaterial3Api::class)
+    @OptIn(ExperimentalMaterial3Api::class)
+@Composable
     fun GlucoseUploaderApp(
         healthConnectUploader: HealthConnectUploader,
         requestPermissions: () -> Unit

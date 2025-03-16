@@ -28,7 +28,8 @@ class PermissionsRationaleActivity : ComponentActivity() {
         }
     }
 
-    @Composable
+    @OptIn(ExperimentalMaterial3Api::class)
+@Composable
     fun PermissionsRationaleScreen() {
         val permissions = listOf(
             PermissionExplanation(
@@ -86,7 +87,8 @@ class PermissionsRationaleActivity : ComponentActivity() {
         }
     }
 
-    @Composable
+    @OptIn(ExperimentalMaterial3Api::class)
+@Composable
     fun PermissionCard(permission: PermissionExplanation) {
         Card(
             modifier = Modifier.fillMaxWidth()

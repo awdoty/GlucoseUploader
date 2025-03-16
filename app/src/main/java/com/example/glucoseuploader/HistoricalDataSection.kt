@@ -23,6 +23,7 @@ import java.time.temporal.ChronoUnit
 /**
  * UI section for historical data access
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoricalDataSection(
     healthConnectUploader: HealthConnectUploader
