@@ -38,7 +38,7 @@ fun EnhancedGlucoseHistoryScreen(
         // Recent data (last 30 days)
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = 4.dp
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)

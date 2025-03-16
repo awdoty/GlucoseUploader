@@ -92,7 +92,7 @@ fun SettingsScreen(
                 containerColor = if (isHealthConnectAvailable && hasPermissions)
                     Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultelevation = CardDefaults.cardElevation(defaultElevation = 4.dp))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -205,7 +205,7 @@ fun SettingsScreen(
         // Background Check Settings
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultelevation = CardDefaults.cardElevation(defaultElevation = 4.dp))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -345,7 +345,7 @@ fun SettingsScreen(
         // Default Meal Type Settings
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultelevation = CardDefaults.cardElevation(defaultElevation = 4.dp))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -402,7 +402,7 @@ fun SettingsScreen(
         // About Section
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultelevation = CardDefaults.cardElevation(defaultElevation = 4.dp))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)
@@ -450,7 +450,7 @@ fun SettingsScreen(
         // Debug Section
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultelevation = CardDefaults.cardElevation(defaultElevation = 4.dp))
         ) {
             Column(
                 modifier = Modifier.padding(16.dp)

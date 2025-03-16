@@ -95,8 +95,8 @@ fun MultiFileImportScreen(
             errorMessage != null -> {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    containerColor = Color(0xFFFFEEEE),
-                    elevation = 4.dp
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEEEE)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
@@ -135,7 +135,7 @@ fun MultiFileImportScreen(
                 // Show list of files
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    elevation = 4.dp
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(

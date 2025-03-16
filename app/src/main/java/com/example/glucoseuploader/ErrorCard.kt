@@ -18,9 +18,9 @@ fun ErrorCard(errorMessage: String) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFEEEE)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEEEE))
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultelevation = CardDefaults.cardElevation(defaultElevation = 4.dp))
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
