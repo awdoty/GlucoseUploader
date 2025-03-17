@@ -6,8 +6,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -156,74 +154,39 @@ fun BackgroundReadSection(
                     }
                 }
                 else -> {
-                    BackgroundReadSettings(healthConnectUploader)
+                    // Show background read settings when available
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Enable background reading",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+
+                        Switch(
+                            checked = true,
+                            onCheckedChange = { /* Handle setting change */ }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            // Implement sync action here
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Sync,
+                            contentDescription = "Sync Now"
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Sync Now")
+                    }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ColumnScope.BackgroundReadSettings(healthConnectUploader: HealthConnectUploader) {
-    val syncFrequencyOptions = listOf("15 minutes", "30 minutes", "1 hour", "3 hours", "6 hours")
-    var selectedSyncFrequency by remember { mutableStateOf(syncFrequencyOptions[2]) }
-    var backgroundReadEnabled by remember { mutableStateOf(true) }
-
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Enable background reading",
-                style = MaterialTheme.typography.bodyLarge
-            )
-
-            Switch(
-                checked = backgroundReadEnabled,
-                onCheckedChange = { enabled ->
-                    backgroundReadEnabled = enabled
-                }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (backgroundReadEnabled) {
-            Text(
-                text = "Sync frequency",
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            OutlinedTextField(
-                value = selectedSyncFrequency,
-                onValueChange = {},
-                readOnly = true,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Frequency") }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    // TODO: Add real sync
-                    //coroutineScope.launch {
-                    //    healthConnectUploader.syncHealthConnectData()
-                    //}
-                    //println("Sync now clicked")
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Sync,
-                    contentDescription = "Sync Now"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Sync Now")
             }
         }
     }

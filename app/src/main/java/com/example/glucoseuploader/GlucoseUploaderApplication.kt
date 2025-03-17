@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 
 class GlucoseUploaderApplication : Application(), Configuration.Provider {
 
-    private val TAG = "GlucoseUploaderApp"
+    private val tag = "GlucoseUploaderApp"
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
@@ -34,22 +34,22 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
                 val isAvailable = try {
                     healthConnectUploader.isHealthConnectAvailable()
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error checking HC availability", e)
+                    Log.e(tag, "Error checking HC availability", e)
                     false
                 }
 
-                Log.d(TAG, "Health Connect available: $isAvailable")
+                Log.d(tag, "Health Connect available: $isAvailable")
 
                 // Initialize any required background work
                 if (isAvailable) {
                     val hasPermissions = try {
                         healthConnectUploader.hasPermissions()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error checking permissions", e)
+                        Log.e(tag, "Error checking permissions", e)
                         false
                     }
 
-                    Log.d(TAG, "Health Connect permissions granted: $hasPermissions")
+                    Log.d(tag, "Health Connect permissions granted: $hasPermissions")
 
                     if (hasPermissions) {
                         // Check if background work is enabled in preferences
@@ -75,15 +75,15 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
                                     intervalHours = interval.toLong()
                                 )
 
-                                Log.d(TAG, "Background checks scheduled every $interval hours")
+                                Log.d(tag, "Background checks scheduled every $interval hours")
                             } catch (e: Exception) {
-                                Log.e(TAG, "Error scheduling background checks", e)
+                                Log.e(tag, "Error scheduling background checks", e)
                             }
                         }
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error during application initialization", e)
+                Log.e(tag, "Error during application initialization", e)
             }
         }
     }

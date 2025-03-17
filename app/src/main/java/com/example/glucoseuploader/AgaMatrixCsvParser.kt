@@ -17,7 +17,7 @@ import java.util.Locale
  * Specialized parser for AgaMatrix CSV format
  */
 class AgaMatrixCsvParser(private val context: Context) {
-    private val TAG = "AgaMatrixCsvParser"
+    private val tag = "AgaMatrixCsvParser"
 
     /**
      * Parse a CSV file from AgaMatrix
@@ -41,7 +41,7 @@ class AgaMatrixCsvParser(private val context: Context) {
             }
 
             if (headerIndex == -1) {
-                Log.w(TAG, "Could not find header row in AgaMatrix CSV")
+                Log.w(tag, "Could not find header row in AgaMatrix CSV")
                 return@withContext readings
             }
 
@@ -52,7 +52,7 @@ class AgaMatrixCsvParser(private val context: Context) {
             val glucoseIndex = headerRow.indexOfFirst { it.trim().contains("Glucose") }
 
             if (dateIndex == -1 || timeIndex == -1 || glucoseIndex == -1) {
-                Log.w(TAG, "Missing required columns in AgaMatrix CSV")
+                Log.w(tag, "Missing required columns in AgaMatrix CSV")
                 return@withContext readings
             }
 
@@ -83,15 +83,15 @@ class AgaMatrixCsvParser(private val context: Context) {
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing row ${csvLines[i]}", e)
+                    Log.e(tag, "Error parsing row ${csvLines[i]}", e)
                     // Continue with next row
                 }
             }
 
-            Log.d(TAG, "Successfully parsed ${readings.size} glucose readings")
+            Log.d(tag, "Successfully parsed ${readings.size} glucose readings")
             readings
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing AgaMatrix CSV", e)
+            Log.e(tag, "Error parsing AgaMatrix CSV", e)
             readings
         }
     }
@@ -116,7 +116,7 @@ class AgaMatrixCsvParser(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading CSV file", e)
+            Log.e(tag, "Error reading CSV file", e)
         }
 
         lines

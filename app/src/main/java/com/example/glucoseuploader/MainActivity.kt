@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -33,11 +32,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.glucoseuploader.ui.theme.GlucoseUploaderTheme
 import kotlinx.coroutines.launch
 import java.io.FileNotFoundException
-import java.time.Instant
 import androidx.compose.material3.ExperimentalMaterial3Api
 
 class MainActivity : ComponentActivity() {
-    private val TAG = "MainActivity"
+    private val tag = "MainActivity"
     private lateinit var healthConnectUploader: HealthConnectUploader
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
 
@@ -57,7 +55,7 @@ class MainActivity : ComponentActivity() {
             ActivityResultContracts.RequestMultiplePermissions()
         ) { permissions ->
             val allGranted = permissions.all { it.value }
-            Log.d(TAG, "Permissions granted: $allGranted")
+            Log.d(tag, "Permissions granted: $allGranted")
 
             // Open Health Connect to fully activate permissions
             if (allGranted) {
@@ -73,7 +71,7 @@ class MainActivity : ComponentActivity() {
             try {
                 healthConnectUploader.logHealthConnectInfo()
             } catch (e: Exception) {
-                Log.e(TAG, "Error logging Health Connect info: ${e.message}")
+                Log.e(tag, "Error logging Health Connect info: ${e.message}")
             }
         }
 
@@ -103,15 +101,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestHealthConnectPermissions() {
+    /**
+     * Public method to request Health Connect permissions (can be called from other activities)
+     */
+    fun requestHealthConnectPermissions() {
         try {
             // Use the permission launcher for Android permissions
             val permissions = healthConnectUploader.getRequiredPermissions()
-            Log.d(TAG, "Requesting permissions: ${permissions.joinToString()}")
+            Log.d(tag, "Requesting permissions: ${permissions.joinToString()}")
             permissionLauncher.launch(permissions)
         } catch (e: Exception) {
             // If permission launcher fails, fall back to requesting through Health Connect
-            Log.e(TAG, "Error launching permission request: ${e.message}")
+            Log.e(tag, "Error launching permission request: ${e.message}")
             openHealthConnectWithPermissions()
         }
     }
@@ -150,7 +151,7 @@ class MainActivity : ComponentActivity() {
                         return
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error with intent ${intent.action}: ${e.message}")
+                    Log.e(tag, "Error with intent ${intent.action}: ${e.message}")
                     // Continue to next intent
                 }
             }
@@ -160,7 +161,7 @@ class MainActivity : ComponentActivity() {
                 healthConnectUploader.openHealthConnectApp(this@MainActivity)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error opening Health Connect: ${e.message}")
+            Log.e(tag, "Error opening Health Connect: ${e.message}")
             Toast.makeText(this, "Please manually enable permissions in Health Connect", Toast.LENGTH_LONG).show()
         }
     }
@@ -172,12 +173,12 @@ class MainActivity : ComponentActivity() {
         // Prevent duplicate handling of the same intent
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastFileHandlingTime < 1000) {
-            Log.d(TAG, "Skipping intent handling - too soon after previous")
+            Log.d(tag, "Skipping intent handling - too soon after previous")
             return
         }
         lastFileHandlingTime = currentTime
 
-        Log.d(TAG, "Handling intent: ${intent.action}, type: ${intent.type}")
+        Log.d(tag, "Handling intent: ${intent.action}, type: ${intent.type}")
 
         when (intent.action) {
             Intent.ACTION_SEND -> {
@@ -185,6 +186,9 @@ class MainActivity : ComponentActivity() {
             }
             Intent.ACTION_VIEW -> {
                 handleViewIntent(intent)
+            }
+            Intent.ACTION_SEND_MULTIPLE -> {
+                handleSendMultipleIntent(intent)
             }
         }
     }
@@ -195,7 +199,7 @@ class MainActivity : ComponentActivity() {
             // Get the URI of the shared file
             val uri = getUriFromIntent(intent)
 
-            Log.d(TAG, "File URI from intent: $uri")
+            Log.d(tag, "File URI from intent: $uri")
 
             uri?.let {
                 try {
@@ -204,17 +208,48 @@ class MainActivity : ComponentActivity() {
                         // File is readable
                         sharedFileUri = it
                         isHandlingSharedFile = true
-                        Log.d(TAG, "Received shared file: $it")
+                        Log.d(tag, "Received shared file: $it")
 
                         // Launch CSV import activity
                         launchCsvImportActivity(it)
                     }
                 } catch (e: FileNotFoundException) {
-                    Log.e(TAG, "Cannot access file: $it", e)
+                    Log.e(tag, "Cannot access file: $it", e)
                     Toast.makeText(this, "Cannot access the shared file", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error handling shared file: $it", e)
+                    Log.e(tag, "Error handling shared file: $it", e)
                     Toast.makeText(this, "Error handling the shared file", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun handleSendMultipleIntent(intent: Intent) {
+        // Check if the intent has files that match our supported types
+        if (isSupportedFileType(intent.type)) {
+            // Get the URIs of the shared files
+            val uriList = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+            }
+
+            if (uriList != null && uriList.isNotEmpty()) {
+                // For now, just handle the first file
+                val uri = uriList[0]
+                try {
+                    contentResolver.openInputStream(uri)?.use {
+                        sharedFileUri = uri
+                        isHandlingSharedFile = true
+                        Log.d(tag, "Received shared file from multiple: $uri")
+
+                        // Launch CSV import activity
+                        launchCsvImportActivity(uri)
+                    }
+                } catch (e: Exception) {
+                    Log.e(tag, "Error handling multiple shared files", e)
+                    Toast.makeText(this, "Error handling shared files", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -223,12 +258,12 @@ class MainActivity : ComponentActivity() {
     private fun handleViewIntent(intent: Intent) {
         val uri = intent.data
         if (uri != null && isSupportedFileType(intent.type)) {
-            Log.d(TAG, "Received view intent with URI: $uri")
+            Log.d(tag, "Received view intent with URI: $uri")
 
             try {
                 launchCsvImportActivity(uri, shouldFinish = true)
             } catch (e: Exception) {
-                Log.e(TAG, "Error handling VIEW intent: ${e.message}")
+                Log.e(tag, "Error handling VIEW intent: ${e.message}")
                 Toast.makeText(this, "Error opening file: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
@@ -250,7 +285,7 @@ class MainActivity : ComponentActivity() {
                     it == "application/octet-stream" ||
                     it.contains("spreadsheet") ||
                     it.contains("csv")
-        } ?: false
+        } == true
     }
 
     private fun launchCsvImportActivity(uri: Uri, shouldFinish: Boolean = false) {
@@ -286,7 +321,6 @@ class MainActivity : ComponentActivity() {
             NavItem("home", "Home", Icons.Default.Home),
             NavItem("history", "History", Icons.Default.History),
             NavItem("statistics", "Statistics", Icons.Default.BarChart),
-            NavItem("changes", "Changes", Icons.Default.Compare),
             NavItem("settings", "Settings", Icons.Default.Settings)
         )
 
@@ -330,7 +364,6 @@ class MainActivity : ComponentActivity() {
                             "home" -> "Glucose Uploader"
                             "history" -> "Glucose History"
                             "statistics" -> "Glucose Statistics"
-                            "changes" -> "Track Changes"
                             "settings" -> "Settings"
                             else -> "Glucose Uploader"
                         }
@@ -393,27 +426,37 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 composable("history") {
-                    EnhancedGlucoseHistoryScreen(
-                        healthConnectUploader = healthConnectUploader,
-                        requestPermissions = requestPermissions
-                    )
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        GlucoseHistoryScreen(
+                            healthConnectUploader = healthConnectUploader,
+                            requestPermissions = requestPermissions
+                        )
+                    }
                 }
                 composable("statistics") {
-                    GlucoseStatisticsScreen(
-                        healthConnectUploader = healthConnectUploader,
-                        requestPermissions = requestPermissions
-                    )
-                }
-                composable("changes") {
-                    GlucoseChangesTrackingScreen(
-                        healthConnectUploader = healthConnectUploader
-                    )
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        GlucoseStatisticsScreen(
+                            healthConnectUploader = healthConnectUploader,
+                            requestPermissions = requestPermissions
+                        )
+                    }
                 }
                 composable("settings") {
-                    SettingsScreen(
-                        healthConnectUploader = healthConnectUploader,
-                        requestPermissions = requestPermissions
-                    )
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        SettingsScreen(
+                            healthConnectUploader = healthConnectUploader,
+                            requestPermissions = requestPermissions
+                        )
+                    }
                 }
             }
         }

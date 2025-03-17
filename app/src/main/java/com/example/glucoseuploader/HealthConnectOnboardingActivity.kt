@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
  */
 class HealthConnectOnboardingActivity : ComponentActivity() {
 
-    private val TAG = "HC_Onboarding"
+    private val tag = "HC_Onboarding"
     private lateinit var healthConnectUploader: HealthConnectUploader
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -162,16 +162,16 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
                         )
                         startActivity(intent)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error with permission API, trying alternative approach", e)
+                        Log.e(tag, "Error with permission API, trying alternative approach", e)
 
                         // Fallback - open Health Connect settings
                         healthConnectUploader.openHealthConnectApp(this@HealthConnectOnboardingActivity)
                     }
                 } else {
-                    Log.e(TAG, "Health Connect client is null")
+                    Log.e(tag, "Health Connect client is null")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error requesting permissions", e)
+                Log.e(tag, "Error requesting permissions", e)
             }
         }
     }

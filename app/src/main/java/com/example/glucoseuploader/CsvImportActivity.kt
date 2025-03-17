@@ -10,13 +10,17 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.lifecycleScope
 import com.example.glucoseuploader.ui.theme.GlucoseUploaderTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+/**
+ * Activity that handles CSV file imports from share intents
+ */
 class CsvImportActivity : ComponentActivity() {
 
-    private val TAG = "CsvImportActivity"
+    private val tag = "CsvImportActivity"
     private lateinit var healthConnectUploader: HealthConnectUploader
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,14 +29,66 @@ class CsvImportActivity : ComponentActivity() {
         healthConnectUploader = HealthConnectUploader(this)
 
         // Get the URI of the CSV file from the intent
-        val action = intent?.action
+        val uri = getFileUriFromIntent(intent)
 
-        val uri = when {
-            // Handle VIEW action (opening file directly)
-            action == Intent.ACTION_VIEW -> intent.data
+        if (uri == null) {
+            Toast.makeText(this, "No CSV file provided", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
 
-            // Handle SEND action (sharing from another app)
-            action == Intent.ACTION_SEND -> {
+        // Log file details for debugging
+        logFileDetails(uri)
+
+        // Set up the UI
+        setContent {
+            GlucoseUploaderTheme {
+                CsvImportScreen(
+                    uri = uri,
+                    healthConnectUploader = healthConnectUploader,
+                    onImportComplete = { success, message ->
+                        handleImportResult(success, message)
+                    }
+                )
+            }
+        }
+
+        // Check Health Connect availability and permissions
+        checkHealthConnectStatus()
+    }
+
+    /**
+     * Handle the result of the import process
+     */
+    private fun handleImportResult(success: Boolean, message: String) {
+        // Show toast with the result
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+        // If we need to request permissions, we shouldn't finish the activity yet
+        if (message.contains("grant permissions", ignoreCase = true)) {
+            requestHealthConnectPermissions()
+            return
+        }
+
+        // Add delay before finishing to show the toast
+        lifecycleScope.launch {
+            delay(if (success) 1500 else 2500)
+            finish()
+        }
+    }
+
+    /**
+     * Extract file URI from Intent, supporting different intent actions
+     */
+    private fun getFileUriFromIntent(intent: Intent?): Uri? {
+        if (intent == null) return null
+
+        return when (intent.action) {
+            // Direct file viewing
+            Intent.ACTION_VIEW -> intent.data
+
+            // File sharing from another app
+            Intent.ACTION_SEND -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
                 } else {
@@ -41,48 +97,43 @@ class CsvImportActivity : ComponentActivity() {
                 }
             }
 
-            // Handle other cases
+            // Multiple files shared (we take only the first one)
+            Intent.ACTION_SEND_MULTIPLE -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)?.firstOrNull()
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.firstOrNull()
+                }
+            }
+
+            // Unknown action
             else -> null
         }
+    }
 
-        if (uri == null) {
-            Toast.makeText(this, "No CSV file provided", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
+    /**
+     * Log file metadata for debugging
+     */
+    private fun logFileDetails(uri: Uri) {
+        try {
+            val fileName = getFileName(uri)
+            val fileSize = getFileSize(uri)
+            val fileType = contentResolver.getType(uri)
 
-        // Get file metadata for logging
-        val fileName = getFileName(uri)
-        val fileSize = getFileSize(uri)
-        val fileType = contentResolver.getType(uri)
+            Log.d(tag, "Received URI: $uri")
+            Log.d(tag, "File name: $fileName")
+            Log.d(tag, "File size: $fileSize bytes")
+            Log.d(tag, "File type: $fileType")
 
-        Log.d(TAG, "Received action: $action with URI: $uri")
-        Log.d(TAG, "File name: $fileName")
-        Log.d(TAG, "File size: $fileSize bytes")
-        Log.d(TAG, "File type: $fileType")
-
-        // Process the CSV file using our composable
-        setContent {
-            GlucoseUploaderTheme {
-                CsvImportScreen(
-                    uri = uri,
-                    healthConnectUploader = healthConnectUploader,
-                    onImportComplete = { success, message ->
-                        if (success) {
-                            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-                            // Add delay before finishing to show the toast
-                            android.os.Handler(mainLooper).postDelayed({
-                                finish()
-                            }, 2000)
-                        } else {
-                            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-                            if (message.contains("Error reading CSV")) {
-                                finish()
-                            }
-                        }
-                    }
-                )
+            // Try to read first few lines for debugging
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                val reader = inputStream.bufferedReader()
+                val firstLine = reader.readLine()
+                Log.d(tag, "First line: $firstLine")
             }
+        } catch (e: Exception) {
+            Log.e(tag, "Error logging file details", e)
         }
     }
 
@@ -102,7 +153,7 @@ class CsvImportActivity : ComponentActivity() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error getting filename", e)
+                Log.e(tag, "Error getting filename", e)
             }
         }
         if (result == null) {
@@ -131,9 +182,78 @@ class CsvImportActivity : ComponentActivity() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error getting file size", e)
+                Log.e(tag, "Error getting file size", e)
             }
         }
         return size
+    }
+
+    /**
+     * Check if Health Connect is available and we have necessary permissions
+     */
+    private fun checkHealthConnectStatus() {
+        lifecycleScope.launch {
+            try {
+                val isAvailable = healthConnectUploader.isHealthConnectAvailable()
+
+                if (isAvailable) {
+                    val hasPermissions = healthConnectUploader.hasPermissions()
+
+                    if (!hasPermissions) {
+                        Log.d(tag, "Health Connect permissions needed")
+                    }
+                } else {
+                    Log.d(tag, "Health Connect not available")
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error checking Health Connect status", e)
+            }
+        }
+    }
+
+    /**
+     * Request Health Connect permissions
+     */
+    private fun requestHealthConnectPermissions() {
+        lifecycleScope.launch {
+            try {
+                // If we have parent activity, pass back the request
+                val parentActivity = parent as? MainActivity
+                if (parentActivity != null) {
+                    parentActivity.requestHealthConnectPermissions()
+                } else {
+                    // Request directly using Health Connect app
+                    healthConnectUploader.openHealthConnectApp(this@CsvImportActivity)
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error requesting permissions", e)
+                Toast.makeText(
+                    this@CsvImportActivity,
+                    "Error requesting permissions: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    /**
+     * Handle new intents when activity is already running
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        // Get a new URI from the intent
+        val newUri = getFileUriFromIntent(intent)
+
+        if (newUri != null) {
+            // Restart the activity with the new URI
+            val restartIntent = Intent(this, CsvImportActivity::class.java).apply {
+                action = Intent.ACTION_VIEW
+                data = newUri
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            startActivity(restartIntent)
+            finish()
+        }
     }
 }

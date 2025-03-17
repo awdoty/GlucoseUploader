@@ -53,7 +53,7 @@ class GlucoseReadWorker(
 
             WorkManager.getInstance(context).enqueue(workRequest)
 
-            Log.d(TAG, "Scheduled glucose read worker to run in $delayMinutes minutes")
+            Log.d(tag, "Scheduled glucose read worker to run in $delayMinutes minutes")
         }
 
         // Schedule periodic background checks
@@ -75,25 +75,25 @@ class GlucoseReadWorker(
                 workRequest
             )
 
-            Log.d(TAG, "Scheduled periodic glucose check every $intervalHours hours")
+            Log.d(tag, "Scheduled periodic glucose check every $intervalHours hours")
         }
 
         // Cancel specific work
         fun cancelWork(context: Context, periodic: Boolean = false) {
             val name = if (periodic) PERIODIC_WORKER_NAME else WORKER_NAME
             WorkManager.getInstance(context).cancelUniqueWork(name)
-            Log.d(TAG, "Canceled glucose work: $name")
+            Log.d(tag, "Canceled glucose work: $name")
         }
 
         // Cancel all scheduled work
         fun cancelAllWork(context: Context) {
             WorkManager.getInstance(context).cancelAllWork()
-            Log.d(TAG, "Canceled all scheduled work")
+            Log.d(tag, "Canceled all scheduled work")
         }
     }
 
     override suspend fun doWork(): Result {
-        Log.d(TAG, "GlucoseReadWorker started")
+        Log.d(tag, "GlucoseReadWorker started")
 
         try {
             // Create Health Connect client
@@ -119,22 +119,22 @@ class GlucoseReadWorker(
                 val latestReading = records.maxByOrNull { it.time }
 
                 // Log the results
-                Log.d(TAG, "Found ${records.size} glucose readings in the last 24 hours")
-                Log.d(TAG, "Average glucose: ${String.format("%.1f", avgGlucose)} mg/dL")
+                Log.d(tag, "Found ${records.size} glucose readings in the last 24 hours")
+                Log.d(tag, "Average glucose: ${String.format("%.1f", avgGlucose)} mg/dL")
                 latestReading?.let {
-                    Log.d(TAG, "Latest reading: ${it.level.inMilligramsPerDeciliter} mg/dL at ${it.time}")
+                    Log.d(tag, "Latest reading: ${it.level.inMilligramsPerDeciliter} mg/dL at ${it.time}")
                 }
 
                 // Show notification with the results
                 showResultNotification(records.size, avgGlucose, latestReading)
             } else {
-                Log.d(TAG, "No glucose readings found in the last 24 hours")
+                Log.d(tag, "No glucose readings found in the last 24 hours")
                 showNoDataNotification()
             }
 
             return Result.success()
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading glucose data: ${e.message}", e)
+            Log.e(tag, "Error reading glucose data: ${e.message}", e)
             return Result.failure()
         }
     }
@@ -151,7 +151,7 @@ class GlucoseReadWorker(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
-                Log.w(TAG, "Notification permission not granted")
+                Log.w(tag, "Notification permission not granted")
                 return
             }
         }
@@ -188,7 +188,7 @@ class GlucoseReadWorker(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
-                Log.w(TAG, "Notification permission not granted")
+                Log.w(tag, "Notification permission not granted")
                 return
             }
         }

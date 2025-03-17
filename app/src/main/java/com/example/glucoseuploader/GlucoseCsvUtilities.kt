@@ -79,7 +79,7 @@ class GlucoseCsvUtilities {
                 GlucoseFileResult.Success(readings, format)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Error parsing glucose file: ${e.message}", e)
+                Log.e(tag, "Error parsing glucose file: ${e.message}", e)
                 GlucoseFileResult.Error("Error parsing file: ${e.message}")
             }
         }
@@ -109,7 +109,7 @@ class GlucoseCsvUtilities {
 
                 lines
             } catch (e: Exception) {
-                Log.e(TAG, "Error reading CSV file", e)
+                Log.e(tag, "Error reading CSV file", e)
                 throw e
             }
         }
