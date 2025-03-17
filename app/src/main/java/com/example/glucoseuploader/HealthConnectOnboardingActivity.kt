@@ -43,7 +43,7 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
     fun OnboardingScreen() {
         var isHealthConnectAvailable by remember { mutableStateOf(false) }
         var isLoading by remember { mutableStateOf(true) }
-        var currentStep by remember { mutableStateOf(1) }
+
 
         // Check Health Connect availability when the screen is composed
         LaunchedEffect(Unit) {
@@ -153,7 +153,6 @@ class HealthConnectOnboardingActivity : ComponentActivity() {
                     // Request permissions - use a simpler approach to work around API limitations
                     try {
                         // Try to use direct permission request if available
-                        val permissionController = client.permissionController
 
                         // Simplified approach - just launch the permission UI directly
                         val intent = Intent("android.health.connect.action.REQUEST_PERMISSIONS")

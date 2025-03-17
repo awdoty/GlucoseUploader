@@ -78,7 +78,7 @@ class AgaMatrixCsvParser(private val context: Context) {
                         if (dateTime != null) {
                             readings.add(GlucoseReading(
                                 value = glucoseValue,
-                                timestamp = dateTime
+                                dateTime = dateTime
                             ))
                         }
                     }

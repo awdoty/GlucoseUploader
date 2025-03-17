@@ -230,7 +230,7 @@ private fun GlucoseRecordItem(record: BloodGlucoseRecord, packageName: String) {
                 )
 
                 // Show data source
-                val source = record.metadata.dataOrigin?.packageName ?: "Unknown"
+                val source = record.metadata.dataOrigin.packageName
                 val isFromThisApp = source == packageName
 
                 Text(

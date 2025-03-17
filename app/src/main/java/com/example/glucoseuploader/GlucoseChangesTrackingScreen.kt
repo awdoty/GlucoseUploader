@@ -26,7 +26,6 @@ fun GlucoseChangesTrackingScreen(
     healthConnectUploader: HealthConnectUploader
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     // State variables
     var isTrackingEnabled by remember { mutableStateOf(false) }

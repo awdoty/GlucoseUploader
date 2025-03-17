@@ -19,10 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 
 /**
  * Define file status enum
@@ -215,7 +213,7 @@ fun MultiFileImportScreen(
 
                                                     if (glucoseData.isNotEmpty()) {
                                                         // Upload data
-                                                        uploadGlucoseReadings(context, healthConnectUploader, glucoseData)
+                                                        uploadGlucoseReadings(healthConnectUploader, glucoseData)
                                                         successCount++
 
                                                         // Update status to success
@@ -454,7 +452,6 @@ private suspend fun previewFile(
  * Upload glucose readings to Health Connect
  */
 private suspend fun uploadGlucoseReadings(
-    context: Context,
     healthConnectUploader: HealthConnectUploader,
     glucoseData: List<GlucoseData>
 ) {

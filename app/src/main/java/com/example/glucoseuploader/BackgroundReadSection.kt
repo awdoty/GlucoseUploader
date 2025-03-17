@@ -161,8 +161,12 @@ fun BackgroundReadSection(
     }
 }
 
+private fun ColumnScope.BackgroundReadSettings(uploader: HealthConnectUploader) {
+    TODO("Not yet implemented")
+}
+
 @Composable
-private fun BackgroundReadSettings(healthConnectUploader: HealthConnectUploader) {
+private fun BackgroundReadSettings() {
     val syncFrequencyOptions = listOf("15 minutes", "30 minutes", "1 hour", "3 hours", "6 hours")
     var selectedSyncFrequency by remember { mutableStateOf(syncFrequencyOptions[2]) }
     var backgroundReadEnabled by remember { mutableStateOf(true) }

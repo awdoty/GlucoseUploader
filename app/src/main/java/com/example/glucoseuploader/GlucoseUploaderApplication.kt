@@ -29,12 +29,26 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
             try {
                 // Check if Health Connect is available on first launch
                 val healthConnectUploader = HealthConnectUploader(this@GlucoseUploaderApplication)
-                val isAvailable = healthConnectUploader.isHealthConnectAvailable()
+
+                // Safe call for suspend function
+                val isAvailable = try {
+                    healthConnectUploader.isHealthConnectAvailable()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error checking HC availability", e)
+                    false
+                }
+
                 Log.d(TAG, "Health Connect available: $isAvailable")
 
                 // Initialize any required background work
                 if (isAvailable) {
-                    val hasPermissions = healthConnectUploader.hasPermissions()
+                    val hasPermissions = try {
+                        healthConnectUploader.hasPermissions()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error checking permissions", e)
+                        false
+                    }
+
                     Log.d(TAG, "Health Connect permissions granted: $hasPermissions")
 
                     if (hasPermissions) {
@@ -55,12 +69,16 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
                             )
 
                             // Schedule background checks
-                            GlucoseReadWorker.scheduleRepeating(
-                                this@GlucoseUploaderApplication,
-                                intervalHours = interval.toLong()
-                            )
+                            try {
+                                GlucoseReadWorker.scheduleRepeating(
+                                    this@GlucoseUploaderApplication,
+                                    intervalHours = interval.toLong()
+                                )
 
-                            Log.d(TAG, "Background checks scheduled every $interval hours")
+                                Log.d(TAG, "Background checks scheduled every $interval hours")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error scheduling background checks", e)
+                            }
                         }
                     }
                 }
@@ -70,9 +88,9 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
         }
     }
 
-    override fun getWorkManagerConfiguration(): Configuration {
-        return Configuration.Builder()
+    // Fix for Configuration.Provider implementation
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
             .setMinimumLoggingLevel(android.util.Log.INFO)
             .build()
-    }
 }
