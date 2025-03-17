@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.core.graphics.record
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.BloodGlucoseRecord
@@ -18,22 +19,77 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import android.content.Context
-import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.changes.Change
 import androidx.health.connect.client.changes.UpsertionChange
-import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.BloodGlucoseRecord
 import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadChangesRequest
-import androidx.health.connect.client.time.TimeRangeFilter
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
 
+sealed class ChangesMessage {
+    data class ChangeList(val changes: List<Change>) : ChangesMessage()
+    data class NoMoreChanges(val nextChangesToken: String) : ChangesMessage()
+}
 
+class HealthConnectUploader(context: Context) {
+
+    private val healthConnectClient = HealthConnectClient.getOrCreate(context)
+
+    // Define the set of permissions required
+    private val permissions = setOf(
+        HealthPermission.getReadPermission(BloodGlucoseRecord::class)
+    )
+
+    // Check if all required permissions are granted
+    suspend fun hasAllPermissions(): Boolean {
+        val granted = healthConnectClient.permissionController.getGrantedPermissions()
+        return permissions.all { granted.contains(it) }
+    }
+
+    // Request permissions
+    suspend fun requestPermissions() {
+        healthConnectClient.permissionController.requestPermissions(permissions)
+    }
+
+    /**
+     * Get the token for tracking changes to glucose readings
+     */
+    suspend fun getGlucoseChangesToken(): String {
+        val request = ChangesTokenRequest(listOf(BloodGlucoseRecord::class))
+        return healthConnectClient.getChangesToken(request)
+    }
+
+    /**
+     * Get glucose changes since a given token
+     */
+    suspend fun getGlucoseChangesSinceToken(token: String): Flow<ChangesMessage> = flow {
+        var nextChangesToken = token
+        do {
+            val request = ReadChangesRequest(nextChangesToken)
+            val response = healthConnectClient.readChanges(request)
+
+            if(response.changes.isNotEmpty()){
+                emit(ChangesMessage.ChangeList(response.changes))
+            }
+
+            nextChangesToken = response.nextChangesToken
+        } while (response.hasMore)
+
+        emit(ChangesMessage.NoMoreChanges(nextChangesToken))
+    }
+
+    /**
+     * Process the changes to get a human-readable list of changes
+     */
+    fun processGlucoseChanges(changes: List<Change>): List<String> {
+        val changeDetails = mutableListOf<String>()
+        for (change in changes) {
+            if (change is UpsertionChange) {
+                val time = ZonedDateTime.ofInstant(change.record.time, ZoneOffset.systemDefault())
+                changeDetails.add("Glucose reading ${change.record.level} mmol/L at $time was ${if (change.record.metadata.id != null) "updated" else "added"}")
+            }
+        }
+        return changeDetails
+    }
+}
 
 class HealthConnectUploader(val context: Context) {
 
@@ -405,7 +461,7 @@ class HealthConnectUploader(val context: Context) {
      * Get changes for glucose data since the given token
      * Note: This is a simplified implementation that may not work with all versions
      */
-    suspend fun getGlucoseChanges:
+    suspend fun getGlucoseChanges():
             Flow<ChangesMessage> = flow {
         // Always return a no-changes message
         emit(ChangesMessage.NoMoreChanges("next_token_${System.currentTimeMillis()}"))
@@ -415,7 +471,7 @@ class HealthConnectUploader(val context: Context) {
      * Process glucose changes into readable messages
      * Note: This is a simplified implementation that may not work with all versions
      */
-    fun processGlucoseChanges: List<String> {
+    fun processGlucoseChanges(): List<String> {
         // Return a generic message
         return listOf("Changes detected in Health Connect data")
     }

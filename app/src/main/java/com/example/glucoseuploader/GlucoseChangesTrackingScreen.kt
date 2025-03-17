@@ -66,7 +66,7 @@ fun GlucoseChangesTrackingScreen(
                 val changesList = mutableListOf<String>()
                 var newToken = token
 
-                healthConnectUploader.getGlucoseChanges(token).collect { message ->
+                healthConnectUploader.getGlucoseChangesSinceToken(token).collect { message ->
                     when (message) {
                         is ChangesMessage.ChangeList -> {
                             val changeDetails = healthConnectUploader.processGlucoseChanges(message.changes)
@@ -86,6 +86,28 @@ fun GlucoseChangesTrackingScreen(
                     changes = changesList
                 }
             } catch (e: Exception) {
+                if (e.message?.contains("expired") == true) {
+                    errorMessage = "Changes token expired. Please enable tracking again."
+                    isTrackingEnabled = false
+                    changesToken = null
+                } else {
+                    errorMessage = "Error getting changes: ${e.message}"
+                }
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+                changesToken = newToken
+
+                if (changesList.isEmpty()) {
+                    changes = listOf("No changes detected since last check")
+                } else {
+                    changes = changesList
+                }
+
+             catch (e: Exception) {
                 if (e.message?.contains("expired") == true) {
                     errorMessage = "Changes token expired. Please enable tracking again."
                     isTrackingEnabled = false

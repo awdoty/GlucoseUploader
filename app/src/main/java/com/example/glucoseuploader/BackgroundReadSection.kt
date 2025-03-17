@@ -6,6 +6,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -161,12 +163,8 @@ fun BackgroundReadSection(
     }
 }
 
-private fun ColumnScope.BackgroundReadSettings(uploader: HealthConnectUploader) {
-    TODO("Not yet implemented")
-}
-
 @Composable
-private fun BackgroundReadSettings() {
+private fun ColumnScope.BackgroundReadSettings(healthConnectUploader: HealthConnectUploader) {
     val syncFrequencyOptions = listOf("15 minutes", "30 minutes", "1 hour", "3 hours", "6 hours")
     var selectedSyncFrequency by remember { mutableStateOf(syncFrequencyOptions[2]) }
     var backgroundReadEnabled by remember { mutableStateOf(true) }
