@@ -32,7 +32,7 @@ fun CsvImportScreen(
     val scrollState = rememberScrollState()
 
     var isLoading by remember { mutableStateOf(true) }
-    var csvContent by remember { mutableStateOf<List<String>>(emptyList()) }
+    var csvContent by remember { mutableStateOf<List<GlucoseData>>(emptyList()) }
     var detectedType by remember { mutableStateOf("Unknown") }
     var readings by remember { mutableStateOf<List<GlucoseReading>>(emptyList()) }
     var uploadStatus by remember { mutableStateOf("") }
@@ -454,39 +454,39 @@ fun CsvImportScreen(
 }
 
 // Helper function stubs
-private fun detectCsvFormat(lines: List<String>): String {
+private fun detectCsvFormat(lines: List<GlucoseData>): String {
+    // Create a combined string of all data for simpler detection
+    val dataString = lines.joinToString(" ") { "${it.date} ${it.time} ${it.glucose}" }
+
     return when {
-        lines.any { it.contains("Agamatrix", ignoreCase = true) } -> "AgaMatrix"
-        lines.any { it.contains("Dexcom", ignoreCase = true) } -> "Dexcom"
-        lines.any { it.contains("Libre", ignoreCase = true) } -> "Freestyle Libre"
-        lines.any { it.contains("OneTouch", ignoreCase = true) } -> "OneTouch"
-        lines.any { it.contains("date", ignoreCase = true) && it.contains("glucose", ignoreCase = true) } -> "Generic"
+        dataString.contains("Agamatrix", ignoreCase = true) -> "AgaMatrix"
+        dataString.contains("Dexcom", ignoreCase = true) -> "Dexcom"
+        dataString.contains("Libre", ignoreCase = true) -> "Freestyle Libre"
+        dataString.contains("OneTouch", ignoreCase = true) -> "OneTouch"
+        dataString.contains("date", ignoreCase = true) &&
+        dataString.contains("glucose", ignoreCase = true) -> "Generic"
         else -> "Unknown"
     }
 }
 
-private fun parseGlucoseReading(line: String): GlucoseReading? {
+private fun parseGlucoseReading(data: GlucoseData): GlucoseReading? {
     try {
         // Simple parsing logic - in a real app, this would be more sophisticated
-        val parts = line.split(",")
-        if (parts.size >= 3) {
-            val dateStr = parts[0].trim()
-            val timeStr = parts[1].trim()
-            val valueStr = parts[2].trim()
+        val dateStr = data.date
+        val timeStr = data.time
+        val valueStr = data.glucose
 
-            val value = valueStr.toDoubleOrNull() ?: return null
+        val value = valueStr.toDoubleOrNull() ?: return null
 
-            // Try to parse the date-time, defaulting to current time if parsing fails
-            val dateTime = try {
-                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                ZonedDateTime.parse("$dateStr $timeStr", formatter)
-            } catch (e: Exception) {
-                ZonedDateTime.now()
-            }
-
-            return GlucoseReading(value, dateTime)
+        // Try to parse the date-time, defaulting to current time if parsing fails
+        val dateTime = try {
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            ZonedDateTime.parse("$dateStr $timeStr", formatter)
+        } catch (e: Exception) {
+            ZonedDateTime.now()
         }
-        return null
+
+        return GlucoseReading(value, dateTime)
     } catch (e: Exception) {
         return null
     }
