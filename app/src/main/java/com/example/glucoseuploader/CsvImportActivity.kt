@@ -40,6 +40,28 @@ class CsvImportActivity : ComponentActivity() {
         // Log file details for debugging
         logFileDetails(uri)
 
+        // Debug logging for file access
+        try {
+            val mimeType = contentResolver.getType(uri)
+            Log.d("CsvImportActivity", "File URI: $uri")
+            Log.d("CsvImportActivity", "File MIME type: $mimeType")
+
+            contentResolver.openInputStream(uri)?.use { stream ->
+                val available = stream.available()
+                Log.d("CsvImportActivity", "File stream available bytes: $available")
+                if (available > 0) {
+                    val buffer = ByteArray(Math.min(available, 100))
+                    stream.read(buffer)
+                    Log.d("CsvImportActivity", "File starts with: ${String(buffer)}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("CsvImportActivity", "Error examining file", e)
+            Toast.makeText(this, "Error opening file: ${e.message}", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
         // Set up the UI
         setContent {
             GlucoseUploaderTheme {

@@ -33,7 +33,7 @@ class GlucoseReadWorker(
 ) : CoroutineWorker(context, params) {
 
     companion object {
-        private const val TAG = "GlucoseReadWorker"
+        private const val tag = "GlucoseReadWorker"
         private const val NOTIFICATION_CHANNEL_ID = "glucose_updates"
         private const val NOTIFICATION_ID = 1001
         private const val WORKER_NAME = "glucose_background_check"

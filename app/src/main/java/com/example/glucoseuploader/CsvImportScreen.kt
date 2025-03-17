@@ -1,6 +1,5 @@
 package com.example.glucoseuploader
 
-import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -15,15 +14,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.health.connect.client.records.BloodGlucoseRecord
-import kotlinx.coroutines.delay
+import android.net.Uri
+import android.util.Log
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import androidx.health.connect.client.records.BloodGlucoseRecord
 
-/**
- * Composable function for CSV import screen that can be used in any activity or composable
- */
 @Composable
 fun CsvImportScreen(
     uri: Uri,
@@ -55,21 +52,36 @@ fun CsvImportScreen(
                 hasPermissions = healthConnectUploader.hasPermissions()
             }
 
-            // Create a CsvReader instance to read the file
-            val reader = CsvReader(context)
-            val csvLines = reader.readCsvFile(uri)
-            csvContent = csvLines
+            // Try to read the file content
+            try {
+                // Read the CSV content
+                val csvLines = readCsvFile(context, uri)
+                csvContent = csvLines
 
-            // Detect the type
-            detectedType = reader.detectCsvType(csvLines)
+                // Detect what type of CSV file this is
+                detectedType = detectCsvFormat(csvLines)
 
-            // Parse the CSV content
-            val parseResult = reader.parseGenericCsvFormat(csvLines)
-            readings = parseResult
+                // Try to extract glucose readings from the file
+                try {
+                    readings = csvLines.mapNotNull { line ->
+                        parseGlucoseReading(line)
+                    }.filter { it.value > 0 }
+
+                    if (readings.isEmpty()) {
+                        errorMessage = "No valid glucose readings found in this file"
+                    }
+                } catch (e: Exception) {
+                    Log.e("CsvImport", "Error parsing readings: ${e.message}")
+                    errorMessage = "Error parsing glucose readings: ${e.message}"
+                }
+            } catch (e: Exception) {
+                Log.e("CsvImport", "Error reading file: ${e.message}")
+                errorMessage = "Error reading CSV file: ${e.message}"
+            }
 
             isLoading = false
         } catch (e: Exception) {
-            errorMessage = "Error reading CSV: ${e.message}"
+            errorMessage = "Error importing CSV: ${e.message}"
             isLoading = false
         }
     }
@@ -168,14 +180,12 @@ fun CsvImportScreen(
 
                     Button(
                         onClick = {
-                            coroutineScope.launch {
-                                if (!isHealthConnectAvailable) {
+                            if (!isHealthConnectAvailable) {
+                                coroutineScope.launch {
                                     healthConnectUploader.openHealthConnectApp(context)
-                                } else {
-                                    // This should trigger permission request in MainActivity
-                                    onImportComplete(false, "Please grant permissions and try again")
                                 }
                             }
+                            onImportComplete(false, "Please grant permissions and try again")
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -201,7 +211,38 @@ fun CsvImportScreen(
             )
         } else if (errorMessage != null) {
             // Show error message
-            ErrorCard(errorMessage!!)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEEEE)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Error",
+                            tint = Color.Red
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Error",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color.Red
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = errorMessage ?: "Unknown error",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -362,9 +403,6 @@ fun CsvImportScreen(
                                     uploadStatus = "Uploaded $current of $total readings"
                                 }
 
-                                // Slight delay to see completion
-                                delay(500)
-
                                 uploadStatus = "Successfully uploaded ${readings.size} readings"
                                 onImportComplete(true, "Successfully uploaded ${readings.size} readings")
                             } catch (e: Exception) {
@@ -415,38 +453,41 @@ fun CsvImportScreen(
     }
 }
 
-@Composable
-fun ErrorCard(errorMessage: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEEEE)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = "Error",
-                    tint = Color.Red
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Error",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.Red
-                )
+// Helper function stubs
+private fun detectCsvFormat(lines: List<String>): String {
+    return when {
+        lines.any { it.contains("Agamatrix", ignoreCase = true) } -> "AgaMatrix"
+        lines.any { it.contains("Dexcom", ignoreCase = true) } -> "Dexcom"
+        lines.any { it.contains("Libre", ignoreCase = true) } -> "Freestyle Libre"
+        lines.any { it.contains("OneTouch", ignoreCase = true) } -> "OneTouch"
+        lines.any { it.contains("date", ignoreCase = true) && it.contains("glucose", ignoreCase = true) } -> "Generic"
+        else -> "Unknown"
+    }
+}
+
+private fun parseGlucoseReading(line: String): GlucoseReading? {
+    try {
+        // Simple parsing logic - in a real app, this would be more sophisticated
+        val parts = line.split(",")
+        if (parts.size >= 3) {
+            val dateStr = parts[0].trim()
+            val timeStr = parts[1].trim()
+            val valueStr = parts[2].trim()
+
+            val value = valueStr.toDoubleOrNull() ?: return null
+
+            // Try to parse the date-time, defaulting to current time if parsing fails
+            val dateTime = try {
+                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                ZonedDateTime.parse("$dateStr $timeStr", formatter)
+            } catch (e: Exception) {
+                ZonedDateTime.now()
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = errorMessage,
-                style = MaterialTheme.typography.bodyLarge
-            )
+            return GlucoseReading(value, dateTime)
         }
+        return null
+    } catch (e: Exception) {
+        return null
     }
 }

@@ -21,6 +21,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 /**
  * Define file status enum
@@ -451,6 +454,32 @@ private suspend fun previewFile(
 /**
  * Upload glucose readings to Health Connect
  */
+private fun tryParseDateTime(dateTimeStr: String): LocalDateTime {
+    // List of common date/time formats to try
+    val formats = listOf(
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy-MM-dd HH:mm",
+        "MM/dd/yyyy HH:mm:ss",
+        "MM/dd/yyyy HH:mm",
+        "dd/MM/yyyy HH:mm:ss",
+        "dd/MM/yyyy HH:mm"
+    )
+
+    // Try each format
+    for (format in formats) {
+        try {
+            val formatter = DateTimeFormatter.ofPattern(format)
+            return LocalDateTime.parse(dateTimeStr.trim(), formatter)
+        } catch (e: DateTimeParseException) {
+            // Try next format
+            continue
+        }
+    }
+
+    // If all formats fail, use current time
+    return LocalDateTime.now()
+}
+
 private suspend fun uploadGlucoseReadings(
     healthConnectUploader: HealthConnectUploader,
     glucoseData: List<GlucoseData>

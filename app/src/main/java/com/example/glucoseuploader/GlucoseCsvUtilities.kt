@@ -24,7 +24,7 @@ import kotlinx.coroutines.withContext
  */
 class GlucoseCsvUtilities {
     companion object {
-        private const val TAG = "GlucoseCsvUtilities"
+        private const val tag = "GlucoseCsvUtilities"
 
         // Known CSV formats
         enum class CsvFormat {

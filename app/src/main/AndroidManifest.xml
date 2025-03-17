@@ -11,6 +11,11 @@
     <!-- Notification Permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Storage Permissions -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+
     <application
         android:name=".GlucoseUploaderApplication"
         android:allowBackup="true"
@@ -55,7 +60,7 @@
                 <data android:scheme="file" />
             </intent-filter>
 
-            <!-- Intent filter for sharing files from other apps - this is crucial for your use case -->
+            <!-- Intent filter for sharing files from other apps -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

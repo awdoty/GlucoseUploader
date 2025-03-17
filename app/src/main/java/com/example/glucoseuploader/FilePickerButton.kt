@@ -16,21 +16,32 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-
 @Composable
 fun FilePickerButton(
     text: String,
-    mimeType: String = "*/*",
     onFileSelected: (Uri) -> Unit
 ) {
+    // Use OpenDocument instead of GetContent for better file system access
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
         uri?.let { onFileSelected(it) }
     }
 
     Button(
-        onClick = { launcher.launch(mimeType) }
+        onClick = {
+            // Launch with multiple MIME types to ensure CSV files are visible
+            launcher.launch(
+                arrayOf(
+                    "text/csv",
+                    "text/comma-separated-values",
+                    "application/csv",
+                    "application/vnd.ms-excel",
+                    "text/plain",
+                    "*/*"
+                )
+            )
+        }
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(

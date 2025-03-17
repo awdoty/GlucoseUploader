@@ -32,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.glucoseuploader.ui.theme.GlucoseUploaderTheme
 import kotlinx.coroutines.launch
 import java.io.FileNotFoundException
+import android.content.pm.PackageManager
 import androidx.compose.material3.ExperimentalMaterial3Api
 
 class MainActivity : ComponentActivity() {
@@ -44,11 +45,19 @@ class MainActivity : ComponentActivity() {
     private var isHandlingSharedFile = false
     private var lastFileHandlingTime: Long = 0
 
+    companion object {
+        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1003
+        private const val STORAGE_PERMISSION_CODE = 1004
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Initialize Health Connect uploader
         healthConnectUploader = HealthConnectUploader(this)
+
+        // Request storage permissions
+        requestStoragePermissions()
 
         // Create permission launcher
         permissionLauncher = registerForActivityResult(
@@ -83,6 +92,25 @@ class MainActivity : ComponentActivity() {
                 GlucoseUploaderApp(
                     healthConnectUploader = healthConnectUploader,
                     requestPermissions = { requestHealthConnectPermissions() }
+                )
+            }
+        }
+    }
+
+    private fun requestStoragePermissions() {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(
+                        Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ),
+                    STORAGE_PERMISSION_CODE
                 )
             }
         }
@@ -293,6 +321,7 @@ class MainActivity : ComponentActivity() {
             action = Intent.ACTION_VIEW
             data = uri
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)  // Add this important flag
         }
         startActivity(importIntent)
 
@@ -460,10 +489,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    companion object {
-        private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1003
     }
 }
 

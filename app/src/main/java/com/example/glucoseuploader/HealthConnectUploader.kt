@@ -17,6 +17,7 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import androidx.health.connect.client.units.BloodGlucose
 
 class HealthConnectUploader(val context: Context) {
 
@@ -159,7 +160,7 @@ class HealthConnectUploader(val context: Context) {
                 time = time,
                 zoneOffset = null,
                 relationToMeal = BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN,
-                level = BloodGlucoseRecord.BloodGlucose.milligramsPerDeciliter(value),
+                level = androidx.health.connect.client.units.BloodGlucose.milligramsPerDeciliter(value),
                 specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD
             )
 
@@ -220,7 +221,7 @@ class HealthConnectUploader(val context: Context) {
                         time = timestamp,
                         zoneOffset = null,
                         relationToMeal = mealType,
-                        level = BloodGlucoseRecord.BloodGlucose.milligramsPerDeciliter(values[i]),
+                        level = androidx.health.connect.client.units.BloodGlucose.milligramsPerDeciliter(values[i]),
                         specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD
                     )
 
@@ -349,7 +350,7 @@ class HealthConnectUploader(val context: Context) {
         try {
             val intent = Intent("android.health.action.INSERT_RECORDS")
             intent.putExtra("android.health.extra.RECORD_TYPES", arrayOf("android.health.BloodGlucose"))
-            intent.putExtra("android.health.extra.BLOOD_GLUCOSE", value)
+            intent.putExtra("android.health.extra.VALUE", value)
             intent.putExtra("android.health.extra.RELATION_TO_MEAL", BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN)
             intent.putExtra("android.health.extra.START_TIME", System.currentTimeMillis())
             intent.addCategory(Intent.CATEGORY_DEFAULT)
