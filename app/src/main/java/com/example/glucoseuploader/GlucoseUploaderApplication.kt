@@ -36,10 +36,7 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
 
                 // Use the updated SDK status check for Android 14+
                 val isAvailable = try {
-                    val sdkStatus = androidx.health.connect.client.HealthConnectClient.getSdkStatus(
-                        applicationContext
-                    )
-                    sdkStatus == androidx.health.connect.client.HealthConnectClient.SDK_AVAILABLE
+                    healthConnectUploader.isHealthConnectAvailable()
                 } catch (e: Exception) {
                     Log.e(tag, "Error checking HC availability", e)
                     false
@@ -47,47 +44,9 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
 
                 Log.d(tag, "Health Connect available: $isAvailable")
 
-                // Initialize any required background work
                 if (isAvailable) {
-                    val hasPermissions = try {
-                        healthConnectUploader.hasPermissions()
-                    } catch (e: Exception) {
-                        Log.e(tag, "Error checking permissions", e)
-                        false
-                    }
-
-                    Log.d(tag, "Health Connect permissions granted: $hasPermissions")
-
-                    if (hasPermissions) {
-                        // Check if background work is enabled in preferences
-                        val prefs = getSharedPreferences(
-                            PreferenceConstants.PREFERENCES_NAME,
-                            MODE_PRIVATE
-                        )
-                        val backgroundCheckEnabled = prefs.getBoolean(
-                            PreferenceConstants.PREF_BACKGROUND_CHECK_ENABLED,
-                            false
-                        )
-
-                        if (backgroundCheckEnabled) {
-                            val interval = prefs.getInt(
-                                PreferenceConstants.PREF_BACKGROUND_CHECK_INTERVAL,
-                                12
-                            )
-
-                            // Schedule background checks
-                            try {
-                                GlucoseReadWorker.scheduleRepeating(
-                                    this@GlucoseUploaderApplication,
-                                    intervalHours = interval.toLong()
-                                )
-
-                                Log.d(tag, "Background checks scheduled every $interval hours")
-                            } catch (e: Exception) {
-                                Log.e(tag, "Error scheduling background checks", e)
-                            }
-                        }
-                    }
+                    // Log Health Connect status
+                    healthConnectUploader.logHealthConnectInfo()
                 }
             } catch (e: Exception) {
                 Log.e(tag, "Error during application initialization", e)

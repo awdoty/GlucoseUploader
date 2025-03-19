@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.*
@@ -32,13 +33,12 @@ fun CsvImportScreen(
     val scrollState = rememberScrollState()
 
     var isLoading by remember { mutableStateOf(true) }
-    var csvContent by remember { mutableStateOf<List<GlucoseData>>(emptyList()) }
-    var detectedType by remember { mutableStateOf("Unknown") }
     var readings by remember { mutableStateOf<List<GlucoseReading>>(emptyList()) }
+    var detectedFormat by remember { mutableStateOf("Detecting...") }
     var uploadStatus by remember { mutableStateOf("") }
-    var uploadProgress by remember { mutableStateOf(0f) }
+    var uploadProgress by remember { mutableFloatStateOf(0f) }
     var isUploading by remember { mutableStateOf(false) }
-    var selectedMealType by remember { mutableStateOf(BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN) }
+    var selectedMealType by remember { mutableIntStateOf(BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isHealthConnectAvailable by remember { mutableStateOf(false) }
     var hasPermissions by remember { mutableStateOf(false) }
@@ -52,31 +52,23 @@ fun CsvImportScreen(
                 hasPermissions = healthConnectUploader.hasPermissions()
             }
 
-            // Try to read the file content
+            // Try to read the file content using the specialized parser
             try {
-                // Read the CSV content
-                val csvLines = readCsvFile(context, uri)
-                csvContent = csvLines
+                val parser = AgaMatrixCsvParser(context)
+                readings = parser.parseAgaMatrixCsv(uri)
 
-                // Detect what type of CSV file this is
-                detectedType = detectCsvFormat(csvLines)
+                detectedFormat = when {
+                    readings.isEmpty() -> "Unknown format (no data found)"
+                    readings.size == 1 -> "CSV with 1 glucose reading"
+                    else -> "CSV with ${readings.size} glucose readings"
+                }
 
-                // Try to extract glucose readings from the file
-                try {
-                    readings = csvLines.mapNotNull { line ->
-                        parseGlucoseReading(line)
-                    }.filter { it.value > 0 }
-
-                    if (readings.isEmpty()) {
-                        errorMessage = "No valid glucose readings found in this file"
-                    }
-                } catch (e: Exception) {
-                    Log.e("CsvImport", "Error parsing readings: ${e.message}")
-                    errorMessage = "Error parsing glucose readings: ${e.message}"
+                if (readings.isEmpty()) {
+                    errorMessage = "No valid glucose readings found in this file"
                 }
             } catch (e: Exception) {
-                Log.e("CsvImport", "Error reading file: ${e.message}")
-                errorMessage = "Error reading CSV file: ${e.message}"
+                Log.e("CsvImport", "Error parsing file: ${e.message}")
+                errorMessage = "Error parsing CSV file: ${e.message}"
             }
 
             isLoading = false
@@ -117,17 +109,9 @@ fun CsvImportScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Detected Format: $detectedType",
+                    text = "Detected Format: $detectedFormat",
                     style = MaterialTheme.typography.bodyLarge
                 )
-
-                if (csvContent.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "File contains ${csvContent.size} lines",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
             }
         }
 
@@ -180,11 +164,6 @@ fun CsvImportScreen(
 
                     Button(
                         onClick = {
-                            if (!isHealthConnectAvailable) {
-                                coroutineScope.launch {
-                                    healthConnectUploader.openHealthConnectApp(context)
-                                }
-                            }
                             onImportComplete(false, "Please grant permissions and try again")
                         },
                         modifier = Modifier.fillMaxWidth()
@@ -309,8 +288,8 @@ fun CsvImportScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
+                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
                         readings.take(5).forEach { reading ->
-                            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
                             Text(
                                 text = "${reading.dateTime.format(formatter)}: ${reading.value} mg/dL",
                                 style = MaterialTheme.typography.bodyMedium
@@ -433,7 +412,7 @@ fun CsvImportScreen(
                     Text(text = uploadStatus)
                     Spacer(modifier = Modifier.height(8.dp))
                     LinearProgressIndicator(
-                        progress = uploadProgress,
+                        progress = { uploadProgress },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -450,44 +429,5 @@ fun CsvImportScreen(
                 Text("Cancel")
             }
         }
-    }
-}
-
-// Helper function stubs
-private fun detectCsvFormat(lines: List<GlucoseData>): String {
-    // Create a combined string of all data for simpler detection
-    val dataString = lines.joinToString(" ") { "${it.date} ${it.time} ${it.glucose}" }
-
-    return when {
-        dataString.contains("Agamatrix", ignoreCase = true) -> "AgaMatrix"
-        dataString.contains("Dexcom", ignoreCase = true) -> "Dexcom"
-        dataString.contains("Libre", ignoreCase = true) -> "Freestyle Libre"
-        dataString.contains("OneTouch", ignoreCase = true) -> "OneTouch"
-        dataString.contains("date", ignoreCase = true) &&
-        dataString.contains("glucose", ignoreCase = true) -> "Generic"
-        else -> "Unknown"
-    }
-}
-
-private fun parseGlucoseReading(data: GlucoseData): GlucoseReading? {
-    try {
-        // Simple parsing logic - in a real app, this would be more sophisticated
-        val dateStr = data.date
-        val timeStr = data.time
-        val valueStr = data.glucose
-
-        val value = valueStr.toDoubleOrNull() ?: return null
-
-        // Try to parse the date-time, defaulting to current time if parsing fails
-        val dateTime = try {
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-            ZonedDateTime.parse("$dateStr $timeStr", formatter)
-        } catch (e: Exception) {
-            ZonedDateTime.now()
-        }
-
-        return GlucoseReading(value, dateTime)
-    } catch (e: Exception) {
-        return null
     }
 }

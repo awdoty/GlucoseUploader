@@ -22,13 +22,11 @@ class CsvImportActivity : ComponentActivity() {
 
     private val tag = "CsvImportActivity"
     private lateinit var healthConnectUploader: HealthConnectUploader
-    private lateinit var permissionsHandler: PermissionsHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         healthConnectUploader = HealthConnectUploader(this)
-        permissionsHandler = PermissionsHandler(this)
 
         // Get the URI of the CSV file from the intent
         val uri = getFileUriFromIntent(intent)
@@ -41,28 +39,6 @@ class CsvImportActivity : ComponentActivity() {
 
         // Log file details for debugging
         logFileDetails(uri)
-
-        // Debug logging for file access
-        try {
-            val mimeType = contentResolver.getType(uri)
-            Log.d(tag, "File URI: $uri")
-            Log.d(tag, "File MIME type: $mimeType")
-
-            contentResolver.openInputStream(uri)?.use { stream ->
-                val available = stream.available()
-                Log.d(tag, "File stream available bytes: $available")
-                if (available > 0) {
-                    val buffer = ByteArray(Math.min(available, 100))
-                    stream.read(buffer)
-                    Log.d(tag, "File starts with: ${String(buffer)}")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(tag, "Error examining file", e)
-            Toast.makeText(this, "Error opening file: ${e.message}", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
 
         // Set up the UI
         setContent {
@@ -218,16 +194,12 @@ class CsvImportActivity : ComponentActivity() {
     private fun checkHealthConnectStatus() {
         lifecycleScope.launch {
             try {
-                val isAvailable = permissionsHandler.isHealthConnectAvailable()
+                val isAvailable = healthConnectUploader.isHealthConnectAvailable()
+                Log.d(tag, "Health Connect available: $isAvailable")
 
                 if (isAvailable) {
-                    val hasPermissions = permissionsHandler.checkRequiredPermissions()
-
-                    if (!hasPermissions) {
-                        Log.d(tag, "Health Connect permissions needed")
-                    }
-                } else {
-                    Log.d(tag, "Health Connect not available")
+                    val hasPermissions = healthConnectUploader.hasPermissions()
+                    Log.d(tag, "Health Connect permissions: $hasPermissions")
                 }
             } catch (e: Exception) {
                 Log.e(tag, "Error checking Health Connect status", e)
@@ -241,21 +213,22 @@ class CsvImportActivity : ComponentActivity() {
     private fun requestHealthConnectPermissions() {
         lifecycleScope.launch {
             try {
-                // Try to use the parent activity if it's MainActivity
-                val parentActivity = getParent() as? MainActivity
-                if (parentActivity != null) {
-                    parentActivity.requestHealthConnectPermissions()
-                } else {
-                    // Request directly using Health Connect app
-                    healthConnectUploader.openHealthConnectApp(this@CsvImportActivity)
-                }
+                val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_PERMISSIONS")
+                val permissions = healthConnectUploader.getRequiredPermissions().toList().toTypedArray()
+                intent.putExtra("androidx.health.EXTRA_PERMISSIONS", permissions)
+                startActivity(intent)
             } catch (e: Exception) {
                 Log.e(tag, "Error requesting permissions", e)
-                Toast.makeText(
-                    this@CsvImportActivity,
-                    "Error requesting permissions: ${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
+                try {
+                    healthConnectUploader.openHealthConnectApp(this@CsvImportActivity)
+                } catch (e2: Exception) {
+                    Log.e(tag, "Error opening Health Connect app", e2)
+                    Toast.makeText(
+                        this@CsvImportActivity,
+                        "Error requesting permissions. Please install Health Connect from Play Store.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }
@@ -266,7 +239,6 @@ class CsvImportActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
-        // Get a new URI from the intent
         val newUri = getFileUriFromIntent(intent)
 
         if (newUri != null) {

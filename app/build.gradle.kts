@@ -49,11 +49,6 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
-
-    lint {
-        baseline = file("lint-baseline.xml")
-        disable += "GradleDependency"
-    }
 }
 
 dependencies {
@@ -73,8 +68,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("com.google.android.material:material:1.11.0")
 
-    // Health Connect - updated to stable version for Android 14
-    implementation("androidx.health.connect:connect-client:1.1.0-alpha04")
+    // Health Connect - updated to required version
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha12")
 
     // Background work
     implementation("androidx.work:work-runtime-ktx:2.9.0")
@@ -84,9 +79,6 @@ dependencies {
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
-
-    // Activity KTX
-    implementation("androidx.activity:activity-ktx:1.8.2")
 
     // Apache Commons CSV
     implementation("org.apache.commons:commons-csv:1.10.0")

@@ -2,6 +2,9 @@ package com.example.glucoseuploader
 
 import java.time.ZonedDateTime
 
+/**
+ * Data class representing a glucose reading with date and time
+ */
 data class GlucoseReading(
     val value: Double,
     val dateTime: ZonedDateTime,

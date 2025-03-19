@@ -11,6 +11,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.Locale
 
 /**
@@ -29,50 +30,63 @@ class AgaMatrixCsvParser(private val context: Context) {
             // Read the file content
             val csvLines = readCsvFile(uri)
 
-            // Find the header row (usually contains "Date", "Time", "Glucose")
-            var headerIndex = -1
-            for (i in csvLines.indices) {
-                if (csvLines[i].contains("Date") &&
-                    (csvLines[i].contains("Time") || csvLines[i].contains("Clock")) &&
-                    csvLines[i].contains("Glucose")) {
-                    headerIndex = i
-                    break
-                }
+            // Log details for debugging
+            Log.d(tag, "Read ${csvLines.size} lines from CSV file")
+            if (csvLines.isNotEmpty()) {
+                Log.d(tag, "First line: ${csvLines.first()}")
             }
 
+            // Find the header row (usually contains "Date", "Time", "Glucose")
+            var headerIndex = findHeaderIndex(csvLines)
             if (headerIndex == -1) {
-                Log.w(tag, "Could not find header row in AgaMatrix CSV")
+                Log.w(tag, "Could not find header row in AgaMatrix CSV, using first row as header")
+                headerIndex = 0
+            }
+
+            if (headerIndex >= csvLines.size) {
+                Log.e(tag, "Header index out of bounds")
                 return@withContext readings
             }
 
             // Parse the header to identify column positions
-            val headerRow = csvLines[headerIndex].split(",")
-            val dateIndex = headerRow.indexOfFirst { it.trim().contains("Date") }
-            val timeIndex = headerRow.indexOfFirst { it.trim().contains("Time") || it.trim().contains("Clock") }
-            val glucoseIndex = headerRow.indexOfFirst { it.trim().contains("Glucose") }
+            val headerRow = csvLines[headerIndex].split(",").map { it.trim() }
+            Log.d(tag, "Header row: $headerRow")
+
+            val dateIndex = headerRow.indexOfFirst {
+                it.contains("Date", ignoreCase = true) && !it.contains("Time", ignoreCase = true)
+            }
+            val timeIndex = headerRow.indexOfFirst {
+                it.contains("Time", ignoreCase = true) || it.contains("Clock", ignoreCase = true)
+            }
+            val glucoseIndex = headerRow.indexOfFirst {
+                it.contains("Glucose", ignoreCase = true) || it.contains("Reading", ignoreCase = true)
+            }
+
+            Log.d(tag, "Column indices: date=$dateIndex, time=$timeIndex, glucose=$glucoseIndex")
 
             if (dateIndex == -1 || timeIndex == -1 || glucoseIndex == -1) {
-                Log.w(tag, "Missing required columns in AgaMatrix CSV")
-                return@withContext readings
+                // Try a more flexible approach
+                Log.w(tag, "Missing standard columns, trying alternative approach")
+                return@withContext parseAlternativeFormat(csvLines)
             }
 
             // Process data rows
             for (i in (headerIndex + 1) until csvLines.size) {
                 try {
-                    val row = csvLines[i].split(",")
+                    val row = csvLines[i].split(",").map { it.trim().replace("\"", "") }
 
-                    if (row.size <= Math.max(Math.max(dateIndex, timeIndex), glucoseIndex)) {
+                    if (row.size <= maxOf(dateIndex, timeIndex, glucoseIndex)) {
                         continue // Skip rows with insufficient columns
                     }
 
-                    val dateStr = row[dateIndex].trim().replace("\"", "")
-                    val timeStr = row[timeIndex].trim().replace("\"", "")
-                    val glucoseStr = row[glucoseIndex].trim().replace("\"", "")
+                    val dateStr = row[dateIndex]
+                    val timeStr = row[timeIndex]
+                    val glucoseStr = row[glucoseIndex]
 
                     // Extract glucose value (remove any units like "mg/dL")
-                    val glucoseValue = glucoseStr.replace(Regex("[^0-9.]"), "").toDoubleOrNull()
+                    val glucoseValue = extractNumericValue(glucoseStr)
 
-                    if (glucoseValue != null && glucoseValue > 0) {
+                    if (glucoseValue > 0) {
                         // Parse date/time
                         val dateTime = parseDateTime(dateStr, timeStr)
                         if (dateTime != null) {
@@ -94,6 +108,84 @@ class AgaMatrixCsvParser(private val context: Context) {
             Log.e(tag, "Error parsing AgaMatrix CSV", e)
             readings
         }
+    }
+
+    /**
+     * Find the header row index in the CSV
+     */
+    private fun findHeaderIndex(csvLines: List<String>): Int {
+        for (i in csvLines.indices) {
+            val line = csvLines[i].lowercase(Locale.ROOT)
+            if ((line.contains("date") && (line.contains("time") || line.contains("clock"))) ||
+                line.contains("glucose")) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    /**
+     * Parse CSV in a more flexible way if standard format is not found
+     */
+    private fun parseAlternativeFormat(csvLines: List<String>): List<GlucoseReading> {
+        val readings = mutableListOf<GlucoseReading>()
+
+        // Try to identify data rows and extract values
+        for (line in csvLines) {
+            try {
+                // Split by comma
+                val parts = line.split(",").map { it.trim() }
+
+                // Look for patterns in each part
+                var dateStr = ""
+                var timeStr = ""
+                var glucoseValue = 0.0
+
+                for (part in parts) {
+                    when {
+                        // Date patterns like MM/DD/YYYY or DD-MM-YYYY
+                        part.matches(Regex("\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}")) -> {
+                            dateStr = part
+                        }
+                        // Time patterns like HH:MM or HH:MM:SS
+                        part.matches(Regex("\\d{1,2}:\\d{2}(:\\d{2})?( ?[APap][Mm])?")) -> {
+                            timeStr = part
+                        }
+                        // Number that could be glucose value
+                        part.matches(Regex("\\d+(\\.\\d+)?")) -> {
+                            val value = part.toDoubleOrNull() ?: 0.0
+                            // Only consider as glucose if in reasonable range (40-600 mg/dL)
+                            if (value in 40.0..600.0) {
+                                glucoseValue = value
+                            }
+                        }
+                        // Value with mg/dL unit
+                        part.contains("mg/dL", ignoreCase = true) -> {
+                            val value = extractNumericValue(part)
+                            if (value > 0) {
+                                glucoseValue = value
+                            }
+                        }
+                    }
+                }
+
+                // If we found both date and glucose value
+                if (dateStr.isNotEmpty() && glucoseValue > 0) {
+                    val dateTime = parseDateTime(dateStr, timeStr)
+                    if (dateTime != null) {
+                        readings.add(GlucoseReading(
+                            value = glucoseValue,
+                            dateTime = dateTime
+                        ))
+                    }
+                }
+            } catch (e: Exception) {
+                // Skip problematic lines
+                continue
+            }
+        }
+
+        return readings
     }
 
     /**
@@ -131,29 +223,95 @@ class AgaMatrixCsvParser(private val context: Context) {
             "MM/dd/yyyy",
             "M/d/yyyy",
             "dd/MM/yyyy",
-            "yyyy-MM-dd"
+            "d/M/yyyy",
+            "yyyy-MM-dd",
+            "MM-dd-yyyy"
         )
 
         // Common time formats in AgaMatrix exports
         val timeFormats = listOf(
             "HH:mm:ss",
             "HH:mm",
+            "h:mm:ss a",
+            "h:mm a",
             "hh:mm:ss a",
             "hh:mm a"
         )
 
+        // Try various date-time format combinations
         for (dateFormat in dateFormats) {
+            // If no time provided, use date only
+            if (timeStr.isEmpty()) {
+                try {
+                    val formatter = DateTimeFormatter.ofPattern(dateFormat, Locale.US)
+                    val localDate = java.time.LocalDate.parse(dateStr, formatter)
+                    return localDate.atStartOfDay(ZoneId.systemDefault())
+                } catch (e: Exception) {
+                    // Try next format
+                }
+            }
+
+            // Try date + time combinations
             for (timeFormat in timeFormats) {
                 try {
-                    val combinedFormat = DateTimeFormatter.ofPattern("$dateFormat $timeFormat", Locale.US)
-                    val localDateTime = LocalDateTime.parse("$dateStr $timeStr", combinedFormat)
+                    val formatter = DateTimeFormatter.ofPattern("$dateFormat $timeFormat", Locale.US)
+                    val formattedDateTime = "$dateStr $timeStr"
+                    val localDateTime = LocalDateTime.parse(formattedDateTime, formatter)
                     return ZonedDateTime.of(localDateTime, ZoneId.systemDefault())
-                } catch (e: Exception) {
+                } catch (e: DateTimeParseException) {
                     // Try next format combination
                 }
             }
         }
 
-        return null
+        // As a fallback, if only date is available and couldn't parse with standard formats
+        if (timeStr.isEmpty()) {
+            try {
+                // Try to extract year, month, day from the string
+                val parts = dateStr.split(Regex("[/.-]"))
+                if (parts.size == 3) {
+                    // Try different arrangements of year, month, day
+                    val arrangements = listOf(
+                        Triple(0, 1, 2), // yyyy-MM-dd
+                        Triple(2, 0, 1), // MM/dd/yyyy
+                        Triple(2, 1, 0)  // dd/MM/yyyy
+                    )
+
+                    for ((yearIdx, monthIdx, dayIdx) in arrangements) {
+                        try {
+                            val year = parts[yearIdx].toInt().let {
+                                if (it < 100) it + 2000 else it // Convert 2-digit years to 4-digit
+                            }
+                            val month = parts[monthIdx].toInt()
+                            val day = parts[dayIdx].toInt()
+
+                            if (year in 2000..2100 && month in 1..12 && day in 1..31) {
+                                return ZonedDateTime.of(
+                                    year, month, day, 0, 0, 0, 0,
+                                    ZoneId.systemDefault()
+                                )
+                            }
+                        } catch (e: Exception) {
+                            // Try next arrangement
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Failed to parse date as fallback: $dateStr", e)
+            }
+        }
+
+        // If all parsing attempts fail, return current time with a warning
+        Log.w(tag, "Could not parse date/time: $dateStr $timeStr - using current time")
+        return ZonedDateTime.now()
+    }
+
+    /**
+     * Extract numeric value from a string that might include units
+     */
+    private fun extractNumericValue(str: String): Double {
+        // Remove any non-numeric characters except decimal point
+        val numericOnly = str.replace(Regex("[^0-9.]"), "")
+        return numericOnly.toDoubleOrNull() ?: 0.0
     }
 }

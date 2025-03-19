@@ -8,13 +8,8 @@
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
 
-    <!-- Notification Permission -->
+    <!-- Notification Permission for Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- Storage Permissions -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="29" />
 
     <application
         android:name=".GlucoseUploaderApplication"
@@ -27,7 +22,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.GlucoseUploader"
         android:enableOnBackInvokedCallback="true"
-        tools:targetApi="31">
+        tools:targetApi="34">
 
         <!-- Main Activity -->
         <activity
@@ -38,13 +33,36 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Permission handling for Android 14 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE"/>
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS"/>
+            </intent-filter>
         </activity>
 
-        <!-- CSV Import Activity -->
+        <!-- Health Connect Onboarding Activity -->
+        <activity
+            android:name=".HealthConnectOnboardingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.GlucoseUploader" />
+
+        <!-- Permissions Rationale Activity -->
+        <activity
+            android:name=".PermissionsRationaleActivity"
+            android:exported="true"
+            android:theme="@style/Theme.GlucoseUploader">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+
+        <!-- CSV Import Activity - handles shared files -->
         <activity
             android:name=".CsvImportActivity"
             android:exported="true"
             android:theme="@style/Theme.GlucoseUploader">
+
             <!-- Intent filter for handling CSV files directly -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -85,42 +103,20 @@
             </intent-filter>
         </activity>
 
-        <!-- Health Connect Onboarding Activity -->
-        <activity
-            android:name=".HealthConnectOnboardingActivity"
-            android:exported="false"
-            android:theme="@style/Theme.GlucoseUploader" />
-
-        <!-- Permissions Rationale Activity -->
-        <activity
-            android:name=".PermissionsRationaleActivity"
-            android:exported="true"
-            android:theme="@style/Theme.GlucoseUploader">
-            <intent-filter>
-                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE"/>
-                <category android:name="android.intent.category.HEALTH_PERMISSIONS"/>
-            </intent-filter>
-        </activity>
-
-        <!-- This is important for WorkManager initialization -->
+        <!-- WorkManager initialization setup -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
-            <!-- Remove the default initialization of WorkManager -->
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
-
     </application>
 
-    <!-- Queries section for Health Connect data access -->
+    <!-- Queries section for Health Connect compatibility -->
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
         <intent>
