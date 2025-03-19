@@ -332,6 +332,14 @@ fun GlucoseStatisticsScreen(
  * Card to display statistics
  */
 
+suspend fun getDayGlucoseStatistics(): List<Double> {
+    return listOf(100.0, 110.0, 120.0) // Replace with real statistics
+}
+
+suspend fun getAllGlucoseStatistics(): List<Double> {
+    return listOf(95.0, 105.0, 115.0) // Replace with real statistics
+}
+
 @Composable
 fun StatisticsCard(statistics: GlucoseStatistics) {
     Card(

@@ -47,7 +47,8 @@ class CsvReader(private val context: Context) {
             Log.d(tag, "Found ${lines.size} non-empty lines in file")
 
             // Log first few lines for debugging
-            lines.take(5).forEachIndexed { index, line ->
+            lines.take(5).forEachIndexed { index,
+                                           line ->
                 Log.d(tag, "Line $index: $line")
             }
 

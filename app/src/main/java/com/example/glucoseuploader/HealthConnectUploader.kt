@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.result.launch
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.BloodGlucoseRecord
@@ -62,9 +63,19 @@ class HealthConnectUploader(val context: Context) {
     /**
      * Check if we have the necessary permissions
      */
+    // In HealthConnectUploader.kt - Modify the hasPermissions() method
     suspend fun hasPermissions(): Boolean {
         try {
             val client = healthConnectClient ?: return false
+
+            // Force refresh permissions cache before checking
+            try {
+                client.permissionController.revokeAllPermissions()
+                client.permissionController.getGrantedPermissions()
+            } catch (e: Exception) {
+                // Ignore any errors from this attempt - it's just to refresh the cache
+            }
+
             val granted = client.permissionController.getGrantedPermissions()
 
             val requiredPermissions = setOf(
@@ -145,6 +156,23 @@ class HealthConnectUploader(val context: Context) {
         } catch (e: Exception) {
             Log.e(tag, "Error requesting history permission", e)
             openHealthConnectApp(activity)
+        }
+    }
+
+    suspend fun getGlucoseChangesToken(): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val healthConnectClient = HealthConnectClient.getOrCreate(context)
+
+                // Request a token for tracking glucose changes
+                val request = ChangesTokenRequest(
+                    recordTypes = setOf(BloodGlucoseRecord::class)
+                )
+
+                healthConnectClient.getChangesToken(request)
+            } catch (e: Exception) {
+                throw RuntimeException("Failed to get changes token: ${e.message}")
+            }
         }
     }
 
@@ -300,32 +328,47 @@ class HealthConnectUploader(val context: Context) {
      * Log Health Connect info for debugging
      */
     suspend fun logHealthConnectInfo() {
-        Log.d(tag, "Health Connect available: ${isHealthConnectAvailable()}")
+          Log.d(tag, "Health Connect available: ${isHealthConnectAvailable()}")
 
         if (isHealthConnectAvailable()) {
             Log.d(tag, "Health Connect permissions: ${hasPermissions()}")
         }
     }
 
-    /**
-     * Open Health Connect app
-     */
-    fun openHealthConnectApp(activityContext: Context? = null) {
-        try {
-            val intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
-            intent.addCategory(Intent.CATEGORY_DEFAULT)
 
-            if (activityContext != null) {
-                activityContext.startActivity(intent)
-            } else {
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
+// ... other imports ...
+    import androidx.activity.result.ActivityResultLauncher // Added import
+// ... other imports ...
+
+    class HealthConnectUploader(val context: Context) {
+
+        // ... other code ...
+
+        /**
+         * Open Health Connect app
+         */
+        fun openHealthConnectApp(activityContext: Context? = null, launcher: ActivityResultLauncher<Intent>? = null) { // Added type for launcher
+            try {
+                val intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
+                intent.addCategory(Intent.CATEGORY_DEFAULT)
+
+                if (launcher != null) {
+                    // Use launcher to expect a result
+                    launcher.launch(intent)
+                } else if (activityContext != null) {
+                    activityContext.startActivity(intent)
+                } else {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error opening Health Connect app", e)
+                // Try Play Store as fallback
+                openHealthConnectInPlayStore()
             }
-        } catch (e: Exception) {
-            Log.e(tag, "Error opening Health Connect app", e)
-            // Try Play Store as fallback
-            openHealthConnectInPlayStore()
         }
+
+        // ... rest of the code ...
     }
 
     /**
@@ -363,12 +406,13 @@ class HealthConnectUploader(val context: Context) {
         }
     }
 
-    /**
-     * Get a token for tracking changes to glucose data
-     * This is a simplified implementation that returns a dummy token
-     */
-    suspend fun getGlucoseChangesToken(): String {
-        return "mock_token_${System.currentTimeMillis()}"
+    fun openHealthConnectApp(context: Context) {
+        val intent = context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
+        if (intent != null) {
+            context.startActivity(intent)
+        } else {
+            Toast.makeText(context, "Health Connect app not installed", Toast.LENGTH_LONG).show()
+        }
     }
 
     /**
