@@ -10,6 +10,7 @@ import java.time.ZonedDateTime
 
 /**
  * Helper class to create BloodGlucoseRecord objects with proper metadata
+ * Updated for Android 14+ compatibility
  */
 object BloodGlucoseRecordHelper {
 
@@ -24,26 +25,25 @@ object BloodGlucoseRecordHelper {
     ): BloodGlucoseRecord {
         // Create device info
         val device = Device(
-            type = Device.TYPE_PHONE,
             manufacturer = android.os.Build.MANUFACTURER,
-            model = android.os.Build.MODEL
+            model = android.os.Build.MODEL,
+            type = Device.TYPE_PHONE
         )
 
-        // Create proper metadata for manual entry
-        // Using RECORDING_METHOD_MANUAL_ENTRY directly since manualEntry factory method might not be available
-        val metadata = Metadata(
-            recordingMethod = Metadata.RECORDING_METHOD_MANUAL_ENTRY,
-            device = device
-        )
+        // Create metadata using Builder pattern for Android 14+ compatibility
+        val metadata = Metadata.Builder()
+            .setDevice(device)
+            .setRecordingMethod(Metadata.RECORDING_METHOD_MANUALLY_ENTERED)
+            .build()
 
         // Create the record
         return BloodGlucoseRecord(
             time = time,
             zoneOffset = ZoneId.systemDefault().rules.getOffset(time),
-            metadata = metadata,
             level = BloodGlucose.milligramsPerDeciliter(value),
             relationToMeal = relationToMeal,
-            specimenSource = specimenSource
+            specimenSource = specimenSource,
+            metadata = metadata
         )
     }
 

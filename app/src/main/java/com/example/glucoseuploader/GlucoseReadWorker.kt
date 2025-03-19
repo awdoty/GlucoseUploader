@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Worker to read glucose data in the background
+ * Updated for Android 14+ compatibility
  */
 class GlucoseReadWorker(
     private val context: Context,
@@ -96,6 +97,13 @@ class GlucoseReadWorker(
         Log.d(tag, "GlucoseReadWorker started")
 
         try {
+            // Check if Health Connect is available
+            val sdkStatus = HealthConnectClient.getSdkStatus(context)
+            if (sdkStatus != HealthConnectClient.SDK_AVAILABLE) {
+                Log.w(tag, "Health Connect SDK not available. Status: $sdkStatus")
+                return Result.failure()
+            }
+
             // Create Health Connect client
             val healthConnectClient = HealthConnectClient.getOrCreate(context)
 
@@ -141,6 +149,7 @@ class GlucoseReadWorker(
 
     /**
      * Show a notification with the glucose reading results
+     * Updated for Android 14+ post-notification permission requirements
      */
     private fun showResultNotification(
         count: Int,
@@ -159,7 +168,7 @@ class GlucoseReadWorker(
         createNotificationChannel()
 
         val notificationBuilder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Use Android's built-in icon
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Glucose Summary")
             .setContentText("Found $count glucose readings in the last 24 hours")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -196,7 +205,7 @@ class GlucoseReadWorker(
         createNotificationChannel()
 
         val notificationBuilder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Use Android's built-in icon
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("Glucose Summary")
             .setContentText("No glucose readings found in the last 24 hours")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

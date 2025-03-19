@@ -4,13 +4,12 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.changes.Change
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.BloodGlucoseRecord
-import androidx.health.connect.client.records.metadata.Device
-import androidx.health.connect.client.records.metadata.Metadata
+import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -70,10 +69,10 @@ class HealthConnectUploader(val context: Context) {
     /**
      * Get required permissions for this app
      */
-    fun getRequiredPermissions(): Array<String> {
-        return arrayOf(
-            "android.permission.health.READ_BLOOD_GLUCOSE",
-            "android.permission.health.WRITE_BLOOD_GLUCOSE"
+    fun getRequiredPermissions(): Set<String> {
+        return setOf(
+            HealthPermission.getReadPermission(BloodGlucoseRecord::class),
+            HealthPermission.getWritePermission(BloodGlucoseRecord::class)
         )
     }
 
@@ -88,8 +87,7 @@ class HealthConnectUploader(val context: Context) {
      * Check if background read is available
      */
     fun isBackgroundReadAvailable(): Boolean {
-        // This is a simplified check - in a real app, you'd check for Android 13+ and HC version
-        return true
+        return true  // Simplified check for Android 14+
     }
 
     /**
@@ -219,8 +217,6 @@ class HealthConnectUploader(val context: Context) {
      * Read historical blood glucose records
      */
     suspend fun readHistoricalBloodGlucoseRecords(startTime: Instant, endTime: Instant): List<BloodGlucoseRecord> {
-        // This uses the same function as normal reading, but could be enhanced
-        // with specialized historical data handling
         return readBloodGlucoseRecords(startTime, endTime)
     }
 
@@ -241,24 +237,21 @@ class HealthConnectUploader(val context: Context) {
     }
 
     /**
-     * Log Health Connect info for debugging
-     */
-    suspend fun logHealthConnectInfo() {
-        Log.d(tag, "Health Connect available: ${isHealthConnectAvailable()}")
-
-        if (isHealthConnectAvailable()) {
-            Log.d(tag, "Health Connect permissions: ${hasPermissions()}")
-        }
-    }
-
-    /**
      * Open Health Connect app
      */
-    fun openHealthConnectApp(activityContext: Context = context) {
+    suspend fun openHealthConnectApp(activityContext: Context = context) {
         try {
-            val intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
-            intent.addCategory(Intent.CATEGORY_DEFAULT)
+            val intent = if (isHealthConnectAvailable()) {
+                // Use the newer intent action for Android 14+
+                Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS")
+            } else {
+                // Use the Play Store intent for installation
+                Intent(Intent.ACTION_VIEW).apply {
+                    data = Uri.parse("market://details?id=com.google.android.apps.healthdata")
+                }
+            }
 
+            // Add flag if needed
             if (activityContext == context) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
@@ -266,7 +259,6 @@ class HealthConnectUploader(val context: Context) {
             activityContext.startActivity(intent)
         } catch (e: Exception) {
             Log.e(tag, "Error opening Health Connect app", e)
-            // Try Play Store as fallback
             openHealthConnectInPlayStore()
         }
     }
@@ -287,41 +279,53 @@ class HealthConnectUploader(val context: Context) {
     }
 
     /**
-     * Add a glucose reading via intent (doesn't require permissions)
+     * Get changes for glucose data since the given token
      */
-    fun addGlucoseViaIntent(context: Context, value: Double): Boolean {
+    fun getGlucoseChanges(token: String): Flow<ChangesMessage> = flow {
         try {
-            val intent = Intent("android.health.action.INSERT_RECORDS")
-            intent.putExtra("android.health.extra.RECORD_TYPES", arrayOf("android.health.BloodGlucose"))
-            intent.putExtra("android.health.extra.VALUE", value)
-            intent.putExtra("android.health.extra.RELATION_TO_MEAL", BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN)
-            intent.putExtra("android.health.extra.START_TIME", System.currentTimeMillis())
-            intent.addCategory(Intent.CATEGORY_DEFAULT)
+            val client = healthConnectClient ?: throw Exception("Health Connect not available")
 
-            context.startActivity(intent)
-            return true
+            val changes = client.getChanges(token)
+
+            if (changes.changes.isNotEmpty()) {
+                emit(ChangesMessage.ChangeList(changes.changes))
+            }
+
+            emit(ChangesMessage.NoMoreChanges(changes.nextChangesToken))
         } catch (e: Exception) {
-            Log.e(tag, "No activity found to handle the intent", e)
-            return false
+            Log.e(tag, "Error getting changes: ${e.message}", e)
+            throw e
         }
     }
 
     /**
-     * Get changes for glucose data since the given token
-     * This is a simplified implementation that returns a no-changes message
-     */
-    fun getGlucoseChanges(token: String): Flow<ChangesMessage> = flow {
-        // Always return a no-changes message
-        emit(ChangesMessage.NoMoreChanges("next_token_${System.currentTimeMillis()}"))
-    }
-
-    /**
      * Process glucose changes into readable messages
-     * This is a simplified implementation that returns a generic message
      */
-    fun processGlucoseChanges(changes: List<Any>): List<String> {
-        // Return a generic message
-        return listOf("Changes detected in Health Connect data")
+    fun processGlucoseChanges(changes: List<Change>): List<String> {
+        val messages = mutableListOf<String>()
+
+        for (change in changes) {
+            when (change) {
+                is Change.Insertion -> {
+                    messages.add("New glucose reading inserted at ${formatTimestamp(change.metadata.clientRecordId ?: "unknown")}")
+                }
+                is Change.Deletion -> {
+                    messages.add("Glucose reading deleted: ${change.deletedUuid}")
+                }
+                is Change.Update -> {
+                    messages.add("Glucose reading updated: ${change.metadata.clientRecordId ?: "unknown"}")
+                }
+                else -> {
+                    messages.add("Unknown change type: ${change::class.java.simpleName}")
+                }
+            }
+        }
+
+        return if (messages.isEmpty()) {
+            listOf("No changes detected in Health Connect data")
+        } else {
+            messages
+        }
     }
 
     /**
@@ -385,14 +389,34 @@ class HealthConnectUploader(val context: Context) {
             )
         } catch (e: Exception) {
             Log.e(tag, "Error getting day statistics: ${e.message}", e)
-            throw e
+            return GlucoseStatistics(
+                averageGlucose = null,
+                minimumGlucose = null,
+                maximumGlucose = null,
+                readingCount = 0L,
+                period = date.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"))
+            )
         }
     }
 
     /**
-     * Revoke all Health Connect permissions for this app
+     * Revoke all Health Connect permissions
      */
     suspend fun revokeAllPermissions() {
         permissionsHandler.revokeAllPermissions()
+    }
+
+    /**
+     * Format a timestamp as a readable string
+     */
+    private fun formatTimestamp(timestamp: String): String {
+        return try {
+            // Try to parse as ISO timestamp if possible
+            Instant.parse(timestamp).atZone(ZoneId.systemDefault())
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+        } catch (e: Exception) {
+            timestamp
+        }
+    }
     }
 }

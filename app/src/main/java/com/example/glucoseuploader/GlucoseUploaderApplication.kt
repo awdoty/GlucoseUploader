@@ -9,6 +9,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
+/**
+ * Application class for the Glucose Uploader app
+ * Updated for Android 14+ compatibility
+ */
 class GlucoseUploaderApplication : Application(), Configuration.Provider {
 
     private val tag = "GlucoseUploaderApp"
@@ -17,7 +21,7 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
-        // Initialize WorkManager
+        // Initialize WorkManager with custom configuration
         WorkManager.initialize(this, workManagerConfiguration)
 
         // Initialize application components
@@ -27,12 +31,15 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
     private fun initializeApp() {
         applicationScope.launch {
             try {
-                // Check if Health Connect is available on first launch
+                // Check if Health Connect is available
                 val healthConnectUploader = HealthConnectUploader(this@GlucoseUploaderApplication)
 
-                // Safe call for suspend function
+                // Use the updated SDK status check for Android 14+
                 val isAvailable = try {
-                    healthConnectUploader.isHealthConnectAvailable()
+                    val sdkStatus = androidx.health.connect.client.HealthConnectClient.getSdkStatus(
+                        applicationContext
+                    )
+                    sdkStatus == androidx.health.connect.client.HealthConnectClient.SDK_AVAILABLE
                 } catch (e: Exception) {
                     Log.e(tag, "Error checking HC availability", e)
                     false
@@ -88,7 +95,7 @@ class GlucoseUploaderApplication : Application(), Configuration.Provider {
         }
     }
 
-    // Fix for Configuration.Provider implementation
+    // Configuration for WorkManager
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setMinimumLoggingLevel(android.util.Log.INFO)

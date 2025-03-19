@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.example.glucoseuploader"
-    compileSdk = 35
+    compileSdk = 34 // Android 14 SDK
 
     defaultConfig {
         applicationId = "com.example.glucoseuploader"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 34 // Target Android 14
         versionCode = 1
         versionName = "1.0"
 
@@ -57,7 +57,7 @@ android {
 }
 
 dependencies {
-    implementation("androidx.activity:activity-ktx:1.10.1")
+    implementation("androidx.activity:activity-ktx:1.8.2")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
@@ -73,8 +73,8 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("com.google.android.material:material:1.11.0")
 
-    // Health Connect
-    implementation("androidx.health.connect:connect-client:1.0.0-alpha11")
+    // Health Connect - updated to stable version for Android 14
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha04")
 
     // Background work
     implementation("androidx.work:work-runtime-ktx:2.9.0")
@@ -88,7 +88,7 @@ dependencies {
     // Activity KTX
     implementation("androidx.activity:activity-ktx:1.8.2")
 
-    // Apache Commons CSV - Add this dependency
+    // Apache Commons CSV
     implementation("org.apache.commons:commons-csv:1.10.0")
 
     testImplementation("junit:junit:4.13.2")

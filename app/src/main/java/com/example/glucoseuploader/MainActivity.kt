@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Parcelable
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -32,15 +31,12 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.glucoseuploader.ui.theme.GlucoseUploaderTheme
 import kotlinx.coroutines.launch
-import java.io.FileNotFoundException
 import android.content.pm.PackageManager
 import androidx.compose.material3.ExperimentalMaterial3Api
 
 class MainActivity : ComponentActivity() {
     private val tag = "MainActivity"
     private lateinit var healthConnectUploader: HealthConnectUploader
-    private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
-    private lateinit var healthConnectLauncher: ActivityResultLauncher<Intent>
 
     // Variables for handling shared files
     private var sharedFileUri: Uri? = null
@@ -58,42 +54,8 @@ class MainActivity : ComponentActivity() {
         // Initialize Health Connect uploader
         healthConnectUploader = HealthConnectUploader(this)
 
-        // Request storage permissions
+        // Request storage permissions (updated for Android 14+)
         requestStoragePermissions()
-
-        // Create permission launcher
-        permissionLauncher = registerForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permissions ->
-            val allGranted = permissions.all { it.value }
-            Log.d(tag, "Permissions granted: $allGranted")
-
-            // Open Health Connect to fully activate permissions
-            if (allGranted) {
-                openHealthConnectWithPermissions()
-            }
-        }
-
-        // Create Health Connect launcher
-        healthConnectLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) {
-            // When returning from Health Connect, refresh permissions check
-            lifecycleScope.launch {
-                try {
-                    val hasPermissions = healthConnectUploader.hasPermissions()
-                    // Update UI based on permission status
-                    if (hasPermissions) {
-                        Toast.makeText(this@MainActivity, "Health Connect permissions granted", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(this@MainActivity, "Health Connect permissions not granted", Toast.LENGTH_SHORT).show()
-                    }
-                    refreshUI()
-                } catch (e: Exception) {
-                    Log.e(tag, "Error checking permissions after returning: ${e.message}")
-                }
-            }
-        }
 
         // Request notification permission on Android 13+
         requestNotificationPermissionIfNeeded()
@@ -125,13 +87,24 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Updated for Android 14+ storage permission model
     private fun requestStoragePermissions() {
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.READ_MEDIA_IMAGES
+                ) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.READ_MEDIA_IMAGES),
+                    STORAGE_PERMISSION_CODE
+                )
+            }
+        } else if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
             if (ContextCompat.checkSelfPermission(
                     this,
                     Manifest.permission.READ_EXTERNAL_STORAGE
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
+                ) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(
@@ -161,55 +134,51 @@ class MainActivity : ComponentActivity() {
      * Public method to request Health Connect permissions (can be called from other activities)
      */
     fun requestHealthConnectPermissions() {
-        try {
-            // Use the permission launcher for Android permissions
-            val permissions = healthConnectUploader.getRequiredPermissions()
-            Log.d(tag, "Requesting permissions: ${permissions.joinToString()}")
-            permissionLauncher.launch(permissions)
-        } catch (e: Exception) {
-            // If permission launcher fails, fall back to requesting through Health Connect
-            Log.e(tag, "Error launching permission request: ${e.message}")
-            openHealthConnectWithPermissions()
+        lifecycleScope.launch {
+            try {
+                // First check if Health Connect is available
+                val isAvailable = healthConnectUploader.isHealthConnectAvailable()
+
+                if (isAvailable) {
+                    // Check if we already have permissions
+                    val hasPermissions = healthConnectUploader.hasPermissions()
+
+                    if (!hasPermissions) {
+                        // Request permissions using modern approach for Android 14+
+                        val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_PERMISSIONS")
+                        val permissions = healthConnectUploader.getRequiredPermissions().toList().toTypedArray()
+                        intent.putExtra("androidx.health.EXTRA_PERMISSIONS", permissions)
+                        intent.putExtra("androidx.health.EXTRA_FROM_PERMISSIONS_REQUEST", true)
+
+                        try {
+                            startActivity(intent)
+                        } catch (e: Exception) {
+                            Log.e(tag, "Failed to launch Health Connect permissions request", e)
+                            openHealthConnectDirectly()
+                        }
+                    }
+                } else {
+                    // Health Connect is not available, attempt to install it
+                    openHealthConnectDirectly()
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error requesting Health Connect permissions", e)
+                Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
     /**
-     * Opens Health Connect app to directly manage permissions
+     * Opens Health Connect app directly
      */
-    private fun openHealthConnectWithPermissions() {
-        try {
-            // Try all known intent actions that might work with Health Connect
-            val intents = listOf(
-                Intent("android.health.connect.action.MANAGE_HEALTH_DATA").apply {
-                    putExtra("android.health.connect.extra.PACKAGE_NAME", packageName)
-                    putExtra("android.health.connect.extra.CATEGORY", "android.health.connect.category.BLOOD_GLUCOSE")
-                    addCategory(Intent.CATEGORY_DEFAULT)
-                },
-                Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS").apply {
-                    addCategory(Intent.CATEGORY_DEFAULT)
-                }
-            )
-
-            // Try each intent in sequence until one works
-            for (intent in intents) {
-                try {
-                    if (intent.resolveActivity(packageManager) != null) {
-                        healthConnectLauncher.launch(intent)
-                        return
-                    }
-                } catch (e: Exception) {
-                    Log.e(tag, "Error with intent ${intent.action}: ${e.message}")
-                    // Continue to next intent
-                }
-            }
-
-            // If no intent works, fall back to opening HC directly
-            lifecycleScope.launch {
+    private fun openHealthConnectDirectly() {
+        lifecycleScope.launch {
+            try {
                 healthConnectUploader.openHealthConnectApp(this@MainActivity)
+            } catch (e: Exception) {
+                Log.e(tag, "Error opening Health Connect", e)
+                Toast.makeText(this@MainActivity, "Please install Health Connect from Play Store", Toast.LENGTH_LONG).show()
             }
-        } catch (e: Exception) {
-            Log.e(tag, "Error opening Health Connect: ${e.message}")
-            Toast.makeText(this, "Please manually enable permissions in Health Connect", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -260,12 +229,9 @@ class MainActivity : ComponentActivity() {
                         // Launch CSV import activity
                         launchCsvImportActivity(it)
                     }
-                } catch (e: FileNotFoundException) {
-                    Log.e(tag, "Cannot access file: $it", e)
-                    Toast.makeText(this, "Cannot access the shared file", Toast.LENGTH_SHORT).show()
                 } catch (e: Exception) {
                     Log.e(tag, "Error handling shared file: $it", e)
-                    Toast.makeText(this, "Error handling the shared file", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Error handling the shared file: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -296,7 +262,7 @@ class MainActivity : ComponentActivity() {
                     }
                 } catch (e: Exception) {
                     Log.e(tag, "Error handling multiple shared files", e)
-                    Toast.makeText(this, "Error handling shared files", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Error handling shared files: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -321,7 +287,7 @@ class MainActivity : ComponentActivity() {
             intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
         } else {
             @Suppress("DEPRECATION")
-            intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
+            intent.getParcelableExtra(Intent.EXTRA_STREAM)
         } ?: intent.data
     }
 

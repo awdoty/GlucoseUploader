@@ -1,11 +1,11 @@
 package com.example.glucoseuploader
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.BloodGlucoseRecord
 import androidx.health.connect.client.records.metadata.Device
@@ -35,7 +35,8 @@ class PermissionsHandler(private val context: Context) {
         HealthPermission.getWritePermission(BloodGlucoseRecord::class)
     )
 
-    // Optional extended permissions
+    // Optional extended permissions - using strings since these permissions might not be
+    // available as constants in older Health Connect versions
     private val historyReadPermission = "android.permission.health.READ_HEALTH_DATA_HISTORY"
     private val backgroundReadPermission = "android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND"
 
@@ -79,7 +80,8 @@ class PermissionsHandler(private val context: Context) {
             try {
                 val client = healthConnectClient ?: return@withContext false
                 val grantedPermissions = client.permissionController.getGrantedPermissions()
-                grantedPermissions.contains(historyReadPermission)
+                // Convert strings to the actual permission objects if needed
+                grantedPermissions.any { it.toString().contains("READ_HEALTH_DATA_HISTORY") }
             } catch (e: Exception) {
                 Log.e(tag, "Error checking history read permission", e)
                 false
@@ -95,7 +97,8 @@ class PermissionsHandler(private val context: Context) {
             try {
                 val client = healthConnectClient ?: return@withContext false
                 val grantedPermissions = client.permissionController.getGrantedPermissions()
-                grantedPermissions.contains(backgroundReadPermission)
+                // Convert strings to the actual permission objects if needed
+                grantedPermissions.any { it.toString().contains("READ_HEALTH_DATA_IN_BACKGROUND") }
             } catch (e: Exception) {
                 Log.e(tag, "Error checking background read permission", e)
                 false
@@ -108,7 +111,12 @@ class PermissionsHandler(private val context: Context) {
      */
     suspend fun isHealthConnectAvailable(): Boolean {
         return withContext(Dispatchers.IO) {
-            healthConnectClient != null
+            try {
+                HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+            } catch (e: Exception) {
+                Log.e(tag, "Error checking Health Connect availability", e)
+                false
+            }
         }
     }
 
@@ -118,23 +126,34 @@ class PermissionsHandler(private val context: Context) {
     fun createMetadata(): Metadata {
         // Create device info for manual entry
         val device = Device(
-            type = Device.TYPE_PHONE,
             manufacturer = android.os.Build.MANUFACTURER,
-            model = android.os.Build.MODEL
+            model = android.os.Build.MODEL,
+            type = Device.TYPE_PHONE
         )
 
-        // Use manual entry recording method since CSV imports are manual
-        return Metadata.manualEntry(device)
+        // Create metadata using builder pattern for Android 14+ compatibility
+        return Metadata.Builder()
+            .setDevice(device)
+            .setRecordingMethod(Metadata.RECORDING_METHOD_MANUALLY_ENTERED)
+            .build()
     }
 
     /**
-     * Request required permissions in given activity
+     * Request required permissions
      */
-    fun requestPermissions(activity: ComponentActivity, launcher: ActivityResultLauncher<Set<String>>) {
+    fun requestPermissions(activity: ComponentActivity) {
         try {
-            launcher.launch(requiredPermissions)
+            val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_PERMISSIONS")
+            intent.putExtra("androidx.health.EXTRA_PERMISSIONS", requiredPermissions.toList().toTypedArray())
+            intent.putExtra("androidx.health.EXTRA_FROM_PERMISSIONS_REQUEST", true)
+            activity.startActivity(intent)
         } catch (e: Exception) {
-            Log.e(tag, "Error launching permission request", e)
+            Log.e(tag, "Error requesting permissions", e)
+            // Try the updated request approach
+            val permissionContract = healthConnectClient?.permissionController?.createRequestPermissionResultContract()
+            activity.registerForActivityResult(permissionContract!!) { granted ->
+                Log.d(tag, "Permission result: $granted")
+            }.launch(requiredPermissions)
         }
     }
 
@@ -143,28 +162,33 @@ class PermissionsHandler(private val context: Context) {
      */
     fun requestHistoryReadPermission(activity: ComponentActivity) {
         try {
-            val permissionController = healthConnectClient?.permissionController
-            permissionController?.requestPermission(
-                activity,
-                setOf(historyReadPermission)
-            )
+            // Use the standard Health Connect intent approach
+            val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_PERMISSIONS")
+            intent.putExtra("androidx.health.EXTRA_PERMISSIONS", arrayOf(historyReadPermission))
+            activity.startActivity(intent)
         } catch (e: Exception) {
             Log.e(tag, "Error requesting history read permission", e)
+            // Fallback: open Health Connect app
+            openHealthConnectApp(activity)
         }
     }
 
     /**
-     * Request background read permission
+     * Open Health Connect app
      */
-    fun requestBackgroundReadPermission(activity: ComponentActivity) {
+    fun openHealthConnectApp(activity: ComponentActivity) {
         try {
-            val permissionController = healthConnectClient?.permissionController
-            permissionController?.requestPermission(
-                activity,
-                setOf(backgroundReadPermission)
-            )
+            // First try newer intent action
+            val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS")
+            activity.startActivity(intent)
         } catch (e: Exception) {
-            Log.e(tag, "Error requesting background read permission", e)
+            try {
+                // Fallback to older intent action
+                val intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
+                activity.startActivity(intent)
+            } catch (e2: Exception) {
+                Log.e(tag, "Error opening Health Connect: ${e2.message}")
+            }
         }
     }
 
