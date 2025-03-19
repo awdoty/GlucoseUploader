@@ -4,25 +4,31 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.result.launch
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.BloodGlucoseRecord
+import androidx.health.connect.client.records.metadata.Device
+import androidx.health.connect.client.records.metadata.Metadata
+import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import androidx.health.connect.client.units.BloodGlucose
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import androidx.health.connect.client.units.BloodGlucose
 
 class HealthConnectUploader(val context: Context) {
 
     private val tag = "HealthConnectUploader"
+    private val permissionsHandler = PermissionsHandler(context)
 
     // Health Connect client
     val healthConnectClient: HealthConnectClient? by lazy {
@@ -38,13 +44,7 @@ class HealthConnectUploader(val context: Context) {
      * Check if Health Connect is available on this device
      */
     suspend fun isHealthConnectAvailable(): Boolean {
-        return try {
-            // Just try to create a client
-            healthConnectClient != null
-        } catch (e: Exception) {
-            Log.e(tag, "Error checking Health Connect availability", e)
-            false
-        }
+        return permissionsHandler.isHealthConnectAvailable()
     }
 
     /**
@@ -63,35 +63,8 @@ class HealthConnectUploader(val context: Context) {
     /**
      * Check if we have the necessary permissions
      */
-    // In HealthConnectUploader.kt - Modify the hasPermissions() method
     suspend fun hasPermissions(): Boolean {
-        try {
-            val client = healthConnectClient ?: return false
-
-            // Force refresh permissions cache before checking
-            try {
-                client.permissionController.revokeAllPermissions()
-                client.permissionController.getGrantedPermissions()
-            } catch (e: Exception) {
-                // Ignore any errors from this attempt - it's just to refresh the cache
-            }
-
-            val granted = client.permissionController.getGrantedPermissions()
-
-            val requiredPermissions = setOf(
-                HealthPermission.getReadPermission(BloodGlucoseRecord::class),
-                HealthPermission.getWritePermission(BloodGlucoseRecord::class)
-            )
-
-            val hasAll = granted.containsAll(requiredPermissions)
-            Log.d(tag, "Read blood glucose: ${granted.contains(HealthPermission.getReadPermission(BloodGlucoseRecord::class))}")
-            Log.d(tag, "Write blood glucose: ${granted.contains(HealthPermission.getWritePermission(BloodGlucoseRecord::class))}")
-
-            return hasAll
-        } catch (e: Exception) {
-            Log.e(tag, "Error checking permissions", e)
-            return false
-        }
+        return permissionsHandler.checkRequiredPermissions()
     }
 
     /**
@@ -108,15 +81,7 @@ class HealthConnectUploader(val context: Context) {
      * Check if we have history read permission
      */
     suspend fun hasHistoryReadPermission(): Boolean {
-        try {
-            val client = healthConnectClient ?: return false
-            val granted = client.permissionController.getGrantedPermissions()
-
-            return granted.contains("android.permission.health.READ_HEALTH_DATA_HISTORY")
-        } catch (e: Exception) {
-            Log.e(tag, "Error checking history permissions", e)
-            return false
-        }
+        return permissionsHandler.hasHistoryReadPermission()
     }
 
     /**
@@ -131,45 +96,30 @@ class HealthConnectUploader(val context: Context) {
      * Check if we have background read permission
      */
     suspend fun hasBackgroundReadPermission(): Boolean {
-        try {
-            val client = healthConnectClient ?: return false
-            val granted = client.permissionController.getGrantedPermissions()
-
-            return granted.contains("android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND")
-        } catch (e: Exception) {
-            Log.e(tag, "Error checking background permissions", e)
-            return false
-        }
+        return permissionsHandler.hasBackgroundReadPermission()
     }
 
     /**
      * Request history read permission
      */
     fun requestHistoryReadPermission(activity: ComponentActivity) {
-        try {
-            val intent = Intent("android.health.connect.action.REQUEST_PERMISSION")
-            intent.putExtra(
-                "android.health.connect.extra.REQUEST_PERMISSIONS",
-                arrayOf("android.permission.health.READ_HEALTH_DATA_HISTORY")
-            )
-            activity.startActivity(intent)
-        } catch (e: Exception) {
-            Log.e(tag, "Error requesting history permission", e)
-            openHealthConnectApp(activity)
-        }
+        permissionsHandler.requestHistoryReadPermission(activity)
     }
 
+    /**
+     * Get a token for tracking glucose changes
+     */
     suspend fun getGlucoseChangesToken(): String {
         return withContext(Dispatchers.IO) {
             try {
-                val healthConnectClient = HealthConnectClient.getOrCreate(context)
+                val client = healthConnectClient ?: throw Exception("Health Connect not available")
 
                 // Request a token for tracking glucose changes
                 val request = ChangesTokenRequest(
                     recordTypes = setOf(BloodGlucoseRecord::class)
                 )
 
-                healthConnectClient.getChangesToken(request)
+                client.getChangesToken(request)
             } catch (e: Exception) {
                 throw RuntimeException("Failed to get changes token: ${e.message}")
             }
@@ -183,13 +133,10 @@ class HealthConnectUploader(val context: Context) {
         try {
             val client = healthConnectClient ?: throw Exception("Health Connect not available")
 
-            // Create a BloodGlucoseRecord
-            val bloodGlucoseRecord = BloodGlucoseRecord(
-                time = time,
-                zoneOffset = null,
-                relationToMeal = BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN,
-                level = androidx.health.connect.client.units.BloodGlucose.milligramsPerDeciliter(value),
-                specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD
+            // Create a BloodGlucoseRecord using the helper
+            val bloodGlucoseRecord = BloodGlucoseRecordHelper.createManualEntry(
+                value = value,
+                time = time
             )
 
             val response = client.insertRecords(listOf(bloodGlucoseRecord))
@@ -214,54 +161,20 @@ class HealthConnectUploader(val context: Context) {
             val client = healthConnectClient ?: throw Exception("Health Connect not available")
 
             // Verify permissions first
-            val permissions = client.permissionController.getGrantedPermissions()
-            val requiredPermissions = setOf(
-                HealthPermission.getWritePermission(BloodGlucoseRecord::class),
-                HealthPermission.getReadPermission(BloodGlucoseRecord::class)
-            )
-
-            if (!permissions.containsAll(requiredPermissions)) {
-                Log.e(tag, "Missing required permissions: ${requiredPermissions - permissions}")
+            if (!hasPermissions()) {
+                Log.e(tag, "Missing required permissions")
                 return false
             }
 
-            val totalReadings = values.size
-            val records = mutableListOf<BloodGlucoseRecord>()
+            // Use the helper to create all records with proper metadata
+            val records = BloodGlucoseRecordHelper.createSeriesFromCsvData(
+                values = values,
+                startTime = startTime,
+                endTime = endTime,
+                mealTypes = mealTypes
+            )
 
-            // Calculate time interval between readings
-            val durationMillis = endTime.toInstant().toEpochMilli() - startTime.toInstant().toEpochMilli()
-            val intervalMillis = if (totalReadings > 1) durationMillis / (totalReadings - 1) else 0
-
-            for (i in values.indices) {
-                // Calculate timestamp for this reading
-                val timestamp = if (totalReadings > 1 && i > 0) {
-                    Instant.ofEpochMilli(startTime.toInstant().toEpochMilli() + (i * intervalMillis))
-                } else {
-                    startTime.toInstant()
-                }
-
-                // Get meal type if available, otherwise use unknown
-                val mealType = if (i < mealTypes.size) mealTypes[i] else BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN
-
-                try {
-                    // Create BloodGlucoseRecord
-                    val bloodGlucoseRecord = BloodGlucoseRecord(
-                        time = timestamp,
-                        zoneOffset = null,
-                        relationToMeal = mealType,
-                        level = androidx.health.connect.client.units.BloodGlucose.milligramsPerDeciliter(values[i]),
-                        specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD
-                    )
-
-                    records.add(bloodGlucoseRecord)
-                } catch (e: Exception) {
-                    Log.e(tag, "Error creating record: ${e.message}")
-                    continue
-                }
-
-                // Report progress
-                progressCallback?.invoke(i + 1, totalReadings)
-            }
+            val totalReadings = records.size
 
             // Insert records in batches to avoid overwhelming Health Connect
             val batchSize = 50
@@ -269,6 +182,9 @@ class HealthConnectUploader(val context: Context) {
                 val batch = records.subList(i, minOf(i + batchSize, records.size))
                 val response = client.insertRecords(batch)
                 Log.d(tag, "Batch ${i/batchSize + 1}: Inserted ${response.recordIdsList.size} records")
+
+                // Report progress after each batch
+                progressCallback?.invoke(minOf(i + batchSize, records.size), totalReadings)
             }
 
             Log.d(tag, "Uploaded ${records.size} glucose readings")
@@ -328,47 +244,31 @@ class HealthConnectUploader(val context: Context) {
      * Log Health Connect info for debugging
      */
     suspend fun logHealthConnectInfo() {
-          Log.d(tag, "Health Connect available: ${isHealthConnectAvailable()}")
+        Log.d(tag, "Health Connect available: ${isHealthConnectAvailable()}")
 
         if (isHealthConnectAvailable()) {
             Log.d(tag, "Health Connect permissions: ${hasPermissions()}")
         }
     }
 
+    /**
+     * Open Health Connect app
+     */
+    fun openHealthConnectApp(activityContext: Context = context) {
+        try {
+            val intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
+            intent.addCategory(Intent.CATEGORY_DEFAULT)
 
-// ... other imports ...
-    import androidx.activity.result.ActivityResultLauncher // Added import
-// ... other imports ...
-
-    class HealthConnectUploader(val context: Context) {
-
-        // ... other code ...
-
-        /**
-         * Open Health Connect app
-         */
-        fun openHealthConnectApp(activityContext: Context? = null, launcher: ActivityResultLauncher<Intent>? = null) { // Added type for launcher
-            try {
-                val intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
-                intent.addCategory(Intent.CATEGORY_DEFAULT)
-
-                if (launcher != null) {
-                    // Use launcher to expect a result
-                    launcher.launch(intent)
-                } else if (activityContext != null) {
-                    activityContext.startActivity(intent)
-                } else {
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(intent)
-                }
-            } catch (e: Exception) {
-                Log.e(tag, "Error opening Health Connect app", e)
-                // Try Play Store as fallback
-                openHealthConnectInPlayStore()
+            if (activityContext == context) {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-        }
 
-        // ... rest of the code ...
+            activityContext.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(tag, "Error opening Health Connect app", e)
+            // Try Play Store as fallback
+            openHealthConnectInPlayStore()
+        }
     }
 
     /**
@@ -403,15 +303,6 @@ class HealthConnectUploader(val context: Context) {
         } catch (e: Exception) {
             Log.e(tag, "No activity found to handle the intent", e)
             return false
-        }
-    }
-
-    fun openHealthConnectApp(context: Context) {
-        val intent = context.packageManager.getLaunchIntentForPackage("com.google.android.apps.healthdata")
-        if (intent != null) {
-            context.startActivity(intent)
-        } else {
-            Toast.makeText(context, "Health Connect app not installed", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -502,12 +393,6 @@ class HealthConnectUploader(val context: Context) {
      * Revoke all Health Connect permissions for this app
      */
     suspend fun revokeAllPermissions() {
-        try {
-            val client = healthConnectClient ?: throw Exception("Health Connect not available")
-            client.permissionController.revokeAllPermissions()
-        } catch (e: Exception) {
-            Log.e(tag, "Error revoking permissions: ${e.message}", e)
-            throw e
-        }
+        permissionsHandler.revokeAllPermissions()
     }
 }

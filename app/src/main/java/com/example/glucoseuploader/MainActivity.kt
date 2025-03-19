@@ -13,10 +13,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -39,13 +40,12 @@ class MainActivity : ComponentActivity() {
     private val tag = "MainActivity"
     private lateinit var healthConnectUploader: HealthConnectUploader
     private lateinit var permissionLauncher: ActivityResultLauncher<Array<String>>
+    private lateinit var healthConnectLauncher: ActivityResultLauncher<Intent>
 
     // Variables for handling shared files
     private var sharedFileUri: Uri? = null
     private var isHandlingSharedFile = false
     private var lastFileHandlingTime: Long = 0
-
-    private val permissionCheckTrigger = MutableLiveData<Boolean>()
 
     companion object {
         private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 1003
@@ -74,6 +74,27 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Create Health Connect launcher
+        healthConnectLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) {
+            // When returning from Health Connect, refresh permissions check
+            lifecycleScope.launch {
+                try {
+                    val hasPermissions = healthConnectUploader.hasPermissions()
+                    // Update UI based on permission status
+                    if (hasPermissions) {
+                        Toast.makeText(this@MainActivity, "Health Connect permissions granted", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@MainActivity, "Health Connect permissions not granted", Toast.LENGTH_SHORT).show()
+                    }
+                    refreshUI()
+                } catch (e: Exception) {
+                    Log.e(tag, "Error checking permissions after returning: ${e.message}")
+                }
+            }
+        }
+
         // Request notification permission on Android 13+
         requestNotificationPermissionIfNeeded()
 
@@ -89,67 +110,17 @@ class MainActivity : ComponentActivity() {
         // Handle intent if this activity was started from a share action
         handleIntent(intent)
 
+        // Set the initial UI
+        refreshUI()
+    }
+
+    private fun refreshUI() {
         setContent {
             GlucoseUploaderTheme {
                 GlucoseUploaderApp(
                     healthConnectUploader = healthConnectUploader,
                     requestPermissions = { requestHealthConnectPermissions() }
                 )
-            }
-        }
-    }
-
-    // In MainActivity.kt - Add a new ActivityResultLauncher
-    private lateinit var healthConnectLauncher: ActivityResultLauncher<Intent>
-
-    // In onCreate(), initialize the
-
-        // Initialize Health Connect uploader
-        healthConnectUploader = HealthConnectUploader(this)
-
-        // Create Health Connect launcher
-        healthConnectLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
-        ) {
-            // When returning from Health Connect, refresh permissions check
-            lifecycleScope.launch {
-                try {
-                    val hasPermissions = healthConnectUploader.hasPermissions()
-                    // Update UI based on permission status
-                    // This will trigger the UI to refresh
-
-                    // Force UI update by setting a state value
-                    // This assumes you're using a state variable in your Compose UI
-                    setContent {
-                        GlucoseUploaderTheme {
-                            GlucoseUploaderApp(
-                                healthConnectUploader = healthConnectUploader,
-                                requestPermissions = { requestHealthConnectPermissions() },
-                                permissionCheckTrigger.value = true                            )
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(tag, "Error checking permissions after returning: ${e.message}")
-                }
-            }
-        }
-    }
-
-    // Add to MainActivity
-    private fun refreshPermissionCheck() {
-        lifecycleScope.launch {
-            try {
-                // Force UI update with new permission status
-                setContent {
-                    GlucoseUploaderTheme {
-                        GlucoseUploaderApp(
-                            healthConnectUploader = healthConnectUploader,
-                            requestPermissions = { requestHealthConnectPermissions() },
-                            permissionCheckTrigger.value = true                        )
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(tag, "Error refreshing permissions", e)
             }
         }
     }
@@ -176,7 +147,7 @@ class MainActivity : ComponentActivity() {
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(
                     this,
                     arrayOf(Manifest.permission.POST_NOTIFICATIONS),
@@ -205,7 +176,6 @@ class MainActivity : ComponentActivity() {
     /**
      * Opens Health Connect app to directly manage permissions
      */
-    // In the openHealthConnectWithPermissions() method, update to use the launcher
     private fun openHealthConnectWithPermissions() {
         try {
             // Try all known intent actions that might work with Health Connect
@@ -215,7 +185,9 @@ class MainActivity : ComponentActivity() {
                     putExtra("android.health.connect.extra.CATEGORY", "android.health.connect.category.BLOOD_GLUCOSE")
                     addCategory(Intent.CATEGORY_DEFAULT)
                 },
-                // other intents...
+                Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS").apply {
+                    addCategory(Intent.CATEGORY_DEFAULT)
+                }
             )
 
             // Try each intent in sequence until one works
@@ -233,9 +205,7 @@ class MainActivity : ComponentActivity() {
 
             // If no intent works, fall back to opening HC directly
             lifecycleScope.launch {
-                val intent = Intent("android.health.connect.action.HEALTH_CONNECT_SETTINGS")
-                intent.addCategory(Intent.CATEGORY_DEFAULT)
-                healthConnectLauncher.launch(intent)
+                healthConnectUploader.openHealthConnectApp(this@MainActivity)
             }
         } catch (e: Exception) {
             Log.e(tag, "Error opening Health Connect: ${e.message}")
@@ -243,7 +213,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-// Handle incoming intents (for shared files)
+    // Handle incoming intents (for shared files)
     private fun handleIntent(intent: Intent?) {
         if (intent == null) return
 
@@ -370,7 +340,7 @@ class MainActivity : ComponentActivity() {
             action = Intent.ACTION_VIEW
             data = uri
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)  // Add this important flag
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         startActivity(importIntent)
 
