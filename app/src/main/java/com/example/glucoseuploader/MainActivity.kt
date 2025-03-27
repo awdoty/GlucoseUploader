@@ -11,9 +11,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.glucoseuploader.ui.theme.GlucoseUploaderTheme
@@ -22,6 +20,12 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val tag = "MainActivity"
     private lateinit var healthConnectUploader: HealthConnectUploader
+
+    // Flag to track if we've requested permissions and should check in onResume
+    private var hasPendingPermissionRequest = false
+
+    // Track app state
+    private val appState = mutableStateOf(AppState())
 
     // For handling shared files
     private var sharedFileUri: Uri? = null
@@ -52,6 +56,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        // Check Health Connect availability and permissions
+        checkHealthConnectStatus()
+
         // Handle intent if this activity was started from a share action
         handleIntent(intent)
 
@@ -60,8 +67,101 @@ class MainActivity : ComponentActivity() {
             GlucoseUploaderTheme {
                 MainScreen(
                     healthConnectUploader = healthConnectUploader,
+                    appState = appState.value,
                     requestPermissions = { requestHealthConnectPermissions() }
                 )
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        // If we have a pending permission request, check permissions again
+        if (hasPendingPermissionRequest) {
+            hasPendingPermissionRequest = false
+
+            lifecycleScope.launch {
+                try {
+                    // Check if Health Connect is available
+                    val isAvailable = healthConnectUploader.isHealthConnectAvailable()
+
+                    if (isAvailable) {
+                        // Re-check permissions after returning from Health Connect
+                        val hasPermissions = healthConnectUploader.hasPermissions()
+
+                        Log.d(tag, "Health Connect permissions after return: $hasPermissions")
+
+                        // Update app state
+                        appState.value = appState.value.copy(
+                            isHealthConnectAvailable = isAvailable,
+                            hasPermissions = hasPermissions
+                        )
+
+                        // Get latest reading if we have permissions
+                        if (hasPermissions) {
+                            try {
+                                val latestRecord = healthConnectUploader.readLatestBloodGlucoseRecord()
+                                latestRecord?.let {
+                                    appState.value = appState.value.copy(
+                                        latestReading = Pair(it.level.inMilligramsPerDeciliter, it.time)
+                                    )
+                                }
+                            } catch (e: Exception) {
+                                Log.e(tag, "Error fetching latest reading: ${e.message}")
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(tag, "Error checking permissions in onResume: ${e.message}")
+                }
+            }
+        }
+    }
+
+    /**
+     * Check Health Connect availability and permissions status
+     */
+    private fun checkHealthConnectStatus() {
+        lifecycleScope.launch {
+            try {
+                // Check if Health Connect is available
+                val isAvailable = healthConnectUploader.isHealthConnectAvailable()
+
+                if (isAvailable) {
+                    // Check if we have necessary permissions
+                    val hasPermissions = healthConnectUploader.hasPermissions()
+
+                    // Update app state
+                    appState.value = appState.value.copy(
+                        isHealthConnectAvailable = isAvailable,
+                        hasPermissions = hasPermissions
+                    )
+
+                    // Get latest reading if we have permissions
+                    if (hasPermissions) {
+                        try {
+                            val latestRecord = healthConnectUploader.readLatestBloodGlucoseRecord()
+                            latestRecord?.let {
+                                appState.value = appState.value.copy(
+                                    latestReading = Pair(it.level.inMilligramsPerDeciliter, it.time)
+                                )
+                            }
+                        } catch (e: Exception) {
+                            Log.e(tag, "Error fetching latest reading: ${e.message}")
+                        }
+                    }
+                } else {
+                    // Health Connect not available
+                    appState.value = appState.value.copy(
+                        isHealthConnectAvailable = false,
+                        hasPermissions = false
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(tag, "Error checking Health Connect status: ${e.message}")
+            } finally {
+                appState.value = appState.value.copy(isLoading = false)
             }
         }
     }
@@ -89,9 +189,12 @@ class MainActivity : ComponentActivity() {
                     val hasPermissions = healthConnectUploader.hasPermissions()
 
                     if (!hasPermissions) {
+                        // Set flag to check permissions when we return
+                        hasPendingPermissionRequest = true
+
                         // Request permissions using modern approach for Android 14+
                         val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_PERMISSIONS")
-                        val permissions = healthConnectUploader.getRequiredPermissions().toList().toTypedArray()
+                        val permissions = healthConnectUploader.getRequiredPermissions().toTypedArray()
                         intent.putExtra("androidx.health.EXTRA_PERMISSIONS", permissions)
                         intent.putExtra("androidx.health.EXTRA_FROM_PERMISSIONS_REQUEST", true)
 
@@ -261,3 +364,13 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
     }
 }
+
+/**
+ * Data class representing the app state for UI updates
+ */
+data class AppState(
+    val isLoading: Boolean = true,
+    val isHealthConnectAvailable: Boolean = false,
+    val hasPermissions: Boolean = false,
+    val latestReading: Pair<Double, java.time.Instant>? = null
+)

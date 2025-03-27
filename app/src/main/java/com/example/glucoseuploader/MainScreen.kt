@@ -22,13 +22,9 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScreen(
     healthConnectUploader: HealthConnectUploader,
+    appState: AppState,
     requestPermissions: () -> Unit
 ) {
-    var isHealthConnectAvailable by remember { mutableStateOf(false) }
-    var hasPermissions by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(true) }
-    var latestGlucoseReading by remember { mutableStateOf<Pair<Double, java.time.Instant>?>(null) }
-
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
@@ -44,29 +40,6 @@ fun MainScreen(
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(intent)
-        }
-    }
-
-    // Check Health Connect status when the screen is first displayed
-    LaunchedEffect(Unit) {
-        try {
-            isHealthConnectAvailable = healthConnectUploader.isHealthConnectAvailable()
-
-            if (isHealthConnectAvailable) {
-                hasPermissions = healthConnectUploader.hasPermissions()
-
-                // Fetch latest reading if we have permissions
-                if (hasPermissions) {
-                    val latestRecord = healthConnectUploader.readLatestBloodGlucoseRecord()
-                    latestRecord?.let {
-                        latestGlucoseReading = Pair(it.level.inMilligramsPerDeciliter, it.time)
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            // Handle error
-        } finally {
-            isLoading = false
         }
     }
 
@@ -109,7 +82,7 @@ fun MainScreen(
                     )
 
                     // Show last reading if available
-                    latestGlucoseReading?.let { (value, time) ->
+                    appState.latestReading?.let { (value, time) ->
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
@@ -145,12 +118,12 @@ fun MainScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    if (isLoading) {
+                    if (appState.isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
                     } else {
-                        if (!isHealthConnectAvailable) {
+                        if (!appState.isHealthConnectAvailable) {
                             Text("Health Connect is not available on this device.")
 
                             Spacer(modifier = Modifier.height(8.dp))
@@ -165,7 +138,7 @@ fun MainScreen(
                             ) {
                                 Text("Install Health Connect")
                             }
-                        } else if (!hasPermissions) {
+                        } else if (!appState.hasPermissions) {
                             Text("Permission to access glucose data is needed.")
 
                             Spacer(modifier = Modifier.height(8.dp))

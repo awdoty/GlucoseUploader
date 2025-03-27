@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.example.glucoseuploader"
-    compileSdk = 34
+    compileSdk = 35  // Updated to SDK 35 for Health Connect compatibility
 
     defaultConfig {
         applicationId = "com.example.glucoseuploader"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 34  // Target can remain 34
         versionCode = 1
         versionName = "1.0"
 
@@ -68,7 +68,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("com.google.android.material:material:1.11.0")
 
-    // Health Connect
+    // Health Connect - requires compileSdk 35
     implementation("androidx.health.connect:connect-client:1.1.0-alpha12")
 
     // Background work

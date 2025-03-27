@@ -1,16 +1,17 @@
 package com.example.glucoseuploader
 
 import androidx.health.connect.client.records.BloodGlucoseRecord
-import androidx.health.connect.client.records.metadata.Device
+import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.units.BloodGlucose
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import java.util.UUID
 
 /**
  * Helper class to create BloodGlucoseRecord objects with proper metadata
- * Updated for Android 14+ compatibility
+ * Updated for Android 14+ and Health Connect compatibility
  */
 object BloodGlucoseRecordHelper {
 
@@ -23,18 +24,14 @@ object BloodGlucoseRecordHelper {
         relationToMeal: Int = BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN,
         specimenSource: Int = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD
     ): BloodGlucoseRecord {
-        // Create device info
-        val device = Device(
-            manufacturer = android.os.Build.MANUFACTURER,
-            model = android.os.Build.MODEL,
-            type = Device.TYPE_PHONE
+        // Create metadata using updated API for alpha12 version
+        val metadata = Metadata(
+            clientRecordId = UUID.randomUUID().toString(),
+            clientRecordVersion = 1,
+            dataOrigin = DataOrigin.SAMSUNG_HEALTH_APP, // Adjust to appropriate source
+            lastModifiedTime = Instant.now(),
+            recordingMethod = Metadata.RECORDING_METHOD_MANUALLY_ENTERED
         )
-
-        // Create metadata using Builder pattern for Android 14+ compatibility
-        val metadata = Metadata.Builder()
-            .setDevice(device)
-            .setRecordingMethod(Metadata.RECORDING_METHOD_MANUALLY_ENTERED)
-            .build()
 
         // Create the record
         return BloodGlucoseRecord(
@@ -78,6 +75,7 @@ object BloodGlucoseRecordHelper {
         val durationMillis = endTime.toInstant().toEpochMilli() - startTime.toInstant().toEpochMilli()
         val intervalMillis = if (totalReadings > 1) durationMillis / (totalReadings - 1) else 0
 
+        // Create records for each value
         for (i in values.indices) {
             // Calculate timestamp for this reading
             val timestamp = if (totalReadings > 1 && i > 0) {

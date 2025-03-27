@@ -7,12 +7,16 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.changes.Change
+import androidx.health.connect.client.changes.UpsertionChange
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.BloodGlucoseRecord
-import androidx.health.connect.client.records.metadata.Device
+import androidx.health.connect.client.records.Record
+import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.request.ReadRecordsRequestUsingIds
+import androidx.health.connect.client.request.ReadRecordsRequestUsingTimeRangeFilter
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.BloodGlucose
 import kotlinx.coroutines.Dispatchers
@@ -46,7 +50,9 @@ class HealthConnectUploader(val context: Context) {
     suspend fun isHealthConnectAvailable(): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+                val status = HealthConnectClient.getSdkStatus(context)
+                Log.d(tag, "Health Connect SDK status: $status")
+                status == HealthConnectClient.SDK_AVAILABLE
             } catch (e: Exception) {
                 Log.e(tag, "Error checking Health Connect availability", e)
                 false
@@ -71,13 +77,24 @@ class HealthConnectUploader(val context: Context) {
      * Check if we have the necessary permissions
      */
     suspend fun hasPermissions(): Boolean {
-        return try {
-            val client = healthConnectClient ?: return false
-            val grantedPermissions = client.permissionController.getGrantedPermissions()
-            grantedPermissions.containsAll(getRequiredPermissions())
-        } catch (e: Exception) {
-            Log.e(tag, "Error checking permissions", e)
-            false
+        return withContext(Dispatchers.IO) {
+            try {
+                val client = healthConnectClient ?: return@withContext false
+                val grantedPermissions = client.permissionController.getGrantedPermissions()
+
+                // Log the permissions for debugging
+                Log.d(tag, "Granted permissions: $grantedPermissions")
+                val requiredPermissions = getRequiredPermissions()
+                Log.d(tag, "Required permissions: $requiredPermissions")
+
+                val hasAll = grantedPermissions.containsAll(requiredPermissions)
+                Log.d(tag, "Has all required permissions: $hasAll")
+
+                hasAll
+            } catch (e: Exception) {
+                Log.e(tag, "Error checking permissions", e)
+                false
+            }
         }
     }
 
@@ -85,23 +102,31 @@ class HealthConnectUploader(val context: Context) {
      * Get required permissions for blood glucose data
      */
     fun getRequiredPermissions(): Set<String> {
-        return setOf(
+        val permissions = setOf(
             HealthPermission.getReadPermission(BloodGlucoseRecord::class),
             HealthPermission.getWritePermission(BloodGlucoseRecord::class)
         )
+        Log.d(tag, "Required permissions set: $permissions")
+        return permissions
     }
 
     /**
      * Check if we have history read permission
      */
     suspend fun hasHistoryReadPermission(): Boolean {
-        return try {
-            val client = healthConnectClient ?: return false
-            val grantedPermissions = client.permissionController.getGrantedPermissions()
-            grantedPermissions.any { it.toString().contains("READ_HEALTH_DATA_HISTORY") }
-        } catch (e: Exception) {
-            Log.e(tag, "Error checking history read permission", e)
-            false
+        return withContext(Dispatchers.IO) {
+            try {
+                val client = healthConnectClient ?: return@withContext false
+                val grantedPermissions = client.permissionController.getGrantedPermissions()
+                val hasHistoryPermission = grantedPermissions.any {
+                    it.toString().contains("READ_HEALTH_DATA_HISTORY")
+                }
+                Log.d(tag, "Has history read permission: $hasHistoryPermission")
+                hasHistoryPermission
+            } catch (e: Exception) {
+                Log.e(tag, "Error checking history read permission", e)
+                false
+            }
         }
     }
 
@@ -116,13 +141,15 @@ class HealthConnectUploader(val context: Context) {
      * Check if we have background read permission
      */
     suspend fun hasBackgroundReadPermission(): Boolean {
-        return try {
-            val client = healthConnectClient ?: return false
-            val grantedPermissions = client.permissionController.getGrantedPermissions()
-            grantedPermissions.any { it.toString().contains("READ_HEALTH_DATA_IN_BACKGROUND") }
-        } catch (e: Exception) {
-            Log.e(tag, "Error checking background read permission", e)
-            false
+        return withContext(Dispatchers.IO) {
+            try {
+                val client = healthConnectClient ?: return@withContext false
+                val grantedPermissions = client.permissionController.getGrantedPermissions()
+                grantedPermissions.any { it.toString().contains("READ_HEALTH_DATA_IN_BACKGROUND") }
+            } catch (e: Exception) {
+                Log.e(tag, "Error checking background read permission", e)
+                false
+            }
         }
     }
 
@@ -146,10 +173,12 @@ class HealthConnectUploader(val context: Context) {
      */
     suspend fun logHealthConnectInfo() {
         try {
-            Log.d(tag, "Health Connect availability: ${isHealthConnectAvailable()}")
+            val availability = isHealthConnectAvailable()
+            Log.d(tag, "Health Connect availability: $availability")
             Log.d(tag, "Health Connect version: ${getHealthConnectVersion()}")
-            if (isHealthConnectAvailable()) {
-                Log.d(tag, "Has permissions: ${hasPermissions()}")
+            if (availability) {
+                val hasPerms = hasPermissions()
+                Log.d(tag, "Has permissions: $hasPerms")
                 Log.d(tag, "Has history read permission: ${hasHistoryReadPermission()}")
                 Log.d(tag, "Has background read permission: ${hasBackgroundReadPermission()}")
             }
@@ -169,27 +198,15 @@ class HealthConnectUploader(val context: Context) {
         try {
             val client = healthConnectClient ?: throw Exception("Health Connect not available")
 
-            // Create a device info for manual entry
-            val device = Device(
-                manufacturer = android.os.Build.MANUFACTURER,
-                model = android.os.Build.MODEL,
-                type = Device.TYPE_PHONE
-            )
-
-            // Create metadata using builder pattern for Android 14+ compatibility
-            val metadata = Metadata.Builder()
-                .setDevice(device)
-                .setRecordingMethod(Metadata.RECORDING_METHOD_MANUALLY_ENTERED)
-                .build()
-
             // Create the record with the specified value and time
             val bloodGlucoseRecord = BloodGlucoseRecord(
-                metadata = metadata,
                 time = time,
                 zoneOffset = ZoneId.systemDefault().rules.getOffset(time),
                 level = BloodGlucose.milligramsPerDeciliter(value),
                 relationToMeal = relationToMeal,
-                specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD
+                specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD,
+                // Use proper metadata creation for alpha12
+                metadata = createMetadata()
             )
 
             // Insert the record
@@ -199,6 +216,20 @@ class HealthConnectUploader(val context: Context) {
             Log.e(tag, "Error uploading glucose reading", e)
             throw e
         }
+    }
+
+    /**
+     * Create metadata for manually entered records
+     */
+    private fun createMetadata(): Metadata {
+        // Create new metadata for alpha12 API
+        return Metadata(
+            clientRecordId = UUID.randomUUID().toString(),
+            clientRecordVersion = 1,
+            dataOrigin = DataOrigin.SAMSUNG_HEALTH_APP, // Set appropriate data origin
+            lastModifiedTime = Instant.now(),
+            recordingMethod = Metadata.RECORDING_METHOD_MANUALLY_ENTERED
+        )
     }
 
     /**
@@ -227,19 +258,6 @@ class HealthConnectUploader(val context: Context) {
             val durationMillis = endTime.toInstant().toEpochMilli() - startTime.toInstant().toEpochMilli()
             val intervalMillis = if (totalReadings > 1) durationMillis / (totalReadings - 1) else 0
 
-            // Create device info for manual entry
-            val device = Device(
-                manufacturer = android.os.Build.MANUFACTURER,
-                model = android.os.Build.MODEL,
-                type = Device.TYPE_PHONE
-            )
-
-            // Create metadata using builder pattern for Android 14+ compatibility
-            val metadata = Metadata.Builder()
-                .setDevice(device)
-                .setRecordingMethod(Metadata.RECORDING_METHOD_MANUALLY_ENTERED)
-                .build()
-
             // Create records for each value
             for (i in values.indices) {
                 // Calculate timestamp for this reading
@@ -255,12 +273,12 @@ class HealthConnectUploader(val context: Context) {
 
                 // Create the record
                 val record = BloodGlucoseRecord(
-                    metadata = metadata,
                     time = timestamp,
                     zoneOffset = ZoneId.systemDefault().rules.getOffset(timestamp),
                     level = BloodGlucose.milligramsPerDeciliter(values[i]),
                     relationToMeal = mealType,
-                    specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD
+                    specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD,
+                    metadata = createMetadata()
                 )
                 records.add(record)
             }
@@ -291,7 +309,7 @@ class HealthConnectUploader(val context: Context) {
         try {
             val client = healthConnectClient ?: throw Exception("Health Connect not available")
 
-            val request = ReadRecordsRequest(
+            val request = ReadRecordsRequestUsingTimeRangeFilter(
                 recordType = BloodGlucoseRecord::class,
                 timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
             )
@@ -451,15 +469,13 @@ class HealthConnectUploader(val context: Context) {
 
         for (change in changes) {
             when (change) {
-                is Change.Insertion -> {
-                    messages.add("New glucose reading inserted at ${formatTimestamp(change.metadata.clientRecordId ?: "unknown")}")
+                is UpsertionChange -> {
+                    if (change.record is BloodGlucoseRecord) {
+                        val record = change.record as BloodGlucoseRecord
+                        messages.add("New glucose reading: ${record.level.inMilligramsPerDeciliter} mg/dL at ${formatTimestamp(record.time)}")
+                    }
                 }
-                is Change.Deletion -> {
-                    messages.add("Glucose reading deleted: ${change.deletedUuid}")
-                }
-                is Change.Update -> {
-                    messages.add("Glucose reading updated: ${change.metadata.clientRecordId ?: "unknown"}")
-                }
+                // Handle other change types
                 else -> {
                     messages.add("Unknown change type: ${change::class.java.simpleName}")
                 }
@@ -476,26 +492,16 @@ class HealthConnectUploader(val context: Context) {
     /**
      * Open Health Connect app or send to Play Store if not installed
      */
-    suspend fun openHealthConnectApp(activityContext: Context = context) {
+    fun openHealthConnectApp(activityContext: Context = context) {
         try {
-            val isAvailable = isHealthConnectAvailable()
-            val intent = if (isAvailable) {
-                // Use the newer intent action for Android 14+
-                Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS")
-            } else {
-                // Use the Play Store intent for installation
-                Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse("market://details?id=com.google.android.apps.healthdata")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-            }
-
+            val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS")
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             activityContext.startActivity(intent)
         } catch (e: Exception) {
-            Log.e(tag, "Error opening Health Connect", e)
+            Log.e(tag, "Error opening Health Connect, trying Play Store", e)
             try {
                 val playStoreIntent = Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse("https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata")
+                    data = Uri.parse("market://details?id=com.google.android.apps.healthdata")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(playStoreIntent)
@@ -511,6 +517,7 @@ class HealthConnectUploader(val context: Context) {
     suspend fun revokeAllPermissions() {
         try {
             healthConnectClient?.permissionController?.revokeAllPermissions()
+            Log.d(tag, "All Health Connect permissions revoked")
         } catch (e: Exception) {
             Log.e(tag, "Error revoking all permissions", e)
         }
@@ -519,13 +526,12 @@ class HealthConnectUploader(val context: Context) {
     /**
      * Format a timestamp as a readable string
      */
-    private fun formatTimestamp(timestamp: String): String {
+    private fun formatTimestamp(timestamp: Instant): String {
         return try {
-            // Try to parse as ISO timestamp if possible
-            Instant.parse(timestamp).atZone(ZoneId.systemDefault())
+            timestamp.atZone(ZoneId.systemDefault())
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
         } catch (e: Exception) {
-            timestamp
+            timestamp.toString()
         }
     }
 

@@ -4,17 +4,19 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResultLauncher
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.BloodGlucoseRecord
-import androidx.health.connect.client.records.metadata.Device
+import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.records.metadata.Metadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.time.Instant
+import java.util.UUID
 
 /**
  * Helper class for managing Health Connect permissions.
+ * Updated for Health Connect 1.1.0-alpha12
  */
 class PermissionsHandler(private val context: Context) {
     private val tag = "PermissionsHandler"
@@ -124,36 +126,30 @@ class PermissionsHandler(private val context: Context) {
      * Create proper metadata for a glucose record
      */
     fun createMetadata(): Metadata {
-        // Create device info for manual entry
-        val device = Device(
-            manufacturer = android.os.Build.MANUFACTURER,
-            model = android.os.Build.MODEL,
-            type = Device.TYPE_PHONE
+        // Create metadata using updated API for Health Connect alpha12
+        return Metadata(
+            clientRecordId = UUID.randomUUID().toString(),
+            clientRecordVersion = 1,
+            dataOrigin = DataOrigin.SAMSUNG_HEALTH_APP, // Adjust to appropriate source
+            lastModifiedTime = Instant.now(),
+            recordingMethod = Metadata.RECORDING_METHOD_MANUALLY_ENTERED
         )
-
-        // Create metadata using builder pattern for Android 14+ compatibility
-        return Metadata.Builder()
-            .setDevice(device)
-            .setRecordingMethod(Metadata.RECORDING_METHOD_MANUALLY_ENTERED)
-            .build()
     }
 
     /**
-     * Request required permissions
+     * Request required permissions using direct intent
      */
     fun requestPermissions(activity: ComponentActivity) {
         try {
+            // For Health Connect 1.1.0-alpha12, use direct intent approach
             val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_PERMISSIONS")
             intent.putExtra("androidx.health.EXTRA_PERMISSIONS", requiredPermissions.toList().toTypedArray())
             intent.putExtra("androidx.health.EXTRA_FROM_PERMISSIONS_REQUEST", true)
             activity.startActivity(intent)
         } catch (e: Exception) {
             Log.e(tag, "Error requesting permissions", e)
-            // Try the updated request approach
-            val permissionContract = healthConnectClient?.permissionController?.createRequestPermissionResultContract()
-            activity.registerForActivityResult(permissionContract!!) { granted ->
-                Log.d(tag, "Permission result: $granted")
-            }.launch(requiredPermissions)
+            // Fallback: open Health Connect directly
+            openHealthConnectApp(activity)
         }
     }
 
@@ -178,7 +174,7 @@ class PermissionsHandler(private val context: Context) {
      */
     fun openHealthConnectApp(activity: ComponentActivity) {
         try {
-            // First try newer intent action
+            // Standard intent for Health Connect settings
             val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS")
             activity.startActivity(intent)
         } catch (e: Exception) {
