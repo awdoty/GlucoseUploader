@@ -1,12 +1,13 @@
 package com.example.glucoseuploader
 
+import androidx.health.connect.client.records.BloodGlucoseRecord
 import java.time.ZonedDateTime
 
 /**
- * Data class representing a glucose reading with date and time
+ * Data class representing a glucose reading from a CSV file
  */
 data class GlucoseReading(
-    val value: Double,
-    val dateTime: ZonedDateTime,
-    val mealType: Int = androidx.health.connect.client.records.BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN
+    val value: Double,         // Glucose value in mg/dL
+    val dateTime: ZonedDateTime, // When the reading was taken
+    val mealType: Int = BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN  // Relation to meal, using BloodGlucoseRecord constants
 )

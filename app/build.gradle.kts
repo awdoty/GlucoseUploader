@@ -61,6 +61,12 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
 
+    // Health Connect
+    implementation("androidx.health.connect:connect-client:1.1.0-alpha12")
+
+    // Apache Commons CSV for parsing
+    implementation("org.apache.commons:commons-csv:1.10.0")
+
     // Material components
     implementation("androidx.compose.material:material")
     implementation("androidx.compose.material:material-icons-core")

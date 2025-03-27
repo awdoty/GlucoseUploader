@@ -1,3 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">GlucoseUploader</string>
+    <string name="app_name">Glucose Uploader</string>
+
+    <!-- Main screen -->
+    <string name="main_title">Glucose Uploader</string>
+    <string name="status_title">Health Connect Status</string>
+    <string name="import_title">Import Glucose Data</string>
+    <string name="instructions_title">Instructions</string>
+
+    <!-- Health Connect status -->
+    <string name="status_not_available">Health Connect is not available on this device.</string>
+    <string name="status_permissions_needed">Permissions needed to access glucose data.</string>
+    <string name="status_ready">Health Connect is available and permissions granted</string>
+
+    <!-- Buttons -->
+    <string name="install_button">Install Health Connect</string>
+    <string name="grant_permissions_button">Grant Permissions</string>
+    <string name="select_file_button">Select CSV File</string>
+    <string name="close_button">Close</string>
+    <string name="cancel_button">Cancel</string>
+
+    <!-- Import screen -->
+    <string name="import_ready">Ready to import</string>
+    <string name="import_reading_file">Reading file…</string>
+    <string name="import_no_readings">No glucose readings found in the file</string>
+    <string name="import_found_readings">Found %1$d glucose readings. Uploading to Health Connect…</string>
+    <string name="import_success">Successfully uploaded %1$d out of %2$d readings</string>
+    <string name="import_failure">Failed to upload any readings</string>
+
+    <!-- Instructions -->
+    <string name="instructions_step1">1. Export CSV from your glucose meter app (like AgaMatrix)</string>
+    <string name="instructions_step2">2. Share the file directly to this app or select it using the button above</string>
+    <string name="instructions_step3">3. The app will upload the readings to Health Connect</string>
+    <string name="instructions_step4">4. View your glucose history in Health Connect or other compatible apps</string>
+
+    <!-- Sharing instructions -->
+    <string name="sharing_instruction">You can also share CSV files directly from your glucose app to this app</string>
+
+    <!-- Please wait -->
+    <string name="please_wait_title">Please Wait</string>
+    <string name="please_wait_message">The app is processing your glucose data and uploading it to Health Connect. This may take a moment depending on the file size.</string>
+
+    <!-- Latest reading -->
+    <string name="latest_reading_title">Latest Reading</string>
+    <string name="latest_reading_format">%1$.0f mg/dL at %2$s</string>
 </resources>

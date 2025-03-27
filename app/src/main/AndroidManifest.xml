@@ -2,14 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Health Connect Permissions -->
+    <!-- Health Connect permissions -->
     <uses-permission android:name="android.permission.health.READ_BLOOD_GLUCOSE" />
     <uses-permission android:name="android.permission.health.WRITE_BLOOD_GLUCOSE" />
-    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
-    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
 
-    <!-- Notification Permission for Android 13+ -->
+    <!-- For Android 13+ notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Optional: Background read permission for Android 13+ -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
 
     <application
         android:name=".GlucoseUploaderApplication"
@@ -20,11 +21,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.GlucoseUploader"
-        android:enableOnBackInvokedCallback="true"
-        tools:targetApi="34">
+        android:theme="@style/Theme.GlucoseUploader">
 
-        <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -34,94 +32,58 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Permission handling for Android 14 -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE"/>
-                <category android:name="android.intent.category.HEALTH_PERMISSIONS"/>
-            </intent-filter>
-        </activity>
-
-        <!-- Health Connect Onboarding Activity -->
-        <activity
-            android:name=".HealthConnectOnboardingActivity"
-            android:exported="false"
-            android:theme="@style/Theme.GlucoseUploader" />
-
-        <!-- Permissions Rationale Activity -->
-        <activity
-            android:name=".PermissionsRationaleActivity"
-            android:exported="true"
-            android:theme="@style/Theme.GlucoseUploader">
-            <intent-filter>
-                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
-            </intent-filter>
-        </activity>
-
-        <!-- CSV Import Activity - handles shared files -->
-        <activity
-            android:name=".CsvImportActivity"
-            android:exported="true"
-            android:theme="@style/Theme.GlucoseUploader">
-
-            <!-- Intent filter for handling CSV files directly -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:mimeType="text/csv" />
-                <data android:mimeType="text/comma-separated-values" />
-                <data android:mimeType="application/vnd.ms-excel" />
-                <data android:mimeType="application/csv" />
-                <data android:mimeType="application/x-csv" />
-                <data android:mimeType="application/octet-stream" />
-                <data android:scheme="content" />
-                <data android:scheme="file" />
-            </intent-filter>
-
-            <!-- Intent filter for sharing files from other apps -->
+            <!-- Handle file sharing: CSV and text files -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/csv" />
                 <data android:mimeType="text/comma-separated-values" />
-                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="text/plain" />
                 <data android:mimeType="application/csv" />
-                <data android:mimeType="application/x-csv" />
-                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/vnd.ms-excel" />
             </intent-filter>
 
-            <!-- For handling multiple files at once -->
+            <!-- Handle multiple file sharing -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/csv" />
                 <data android:mimeType="text/comma-separated-values" />
-                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="text/plain" />
                 <data android:mimeType="application/csv" />
-                <data android:mimeType="application/x-csv" />
-                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/vnd.ms-excel" />
+            </intent-filter>
+
+            <!-- Handle direct file viewing -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="application/csv" />
+                <data android:mimeType="application/vnd.ms-excel" />
             </intent-filter>
         </activity>
 
-        <!-- WorkManager initialization setup -->
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
+        <activity
+            android:name=".CsvImportActivity"
             android:exported="false"
-            tools:node="merge">
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove" />
-        </provider>
+            android:label="Import Glucose Data" />
+
+        <activity
+            android:name=".PermissionsRationaleActivity"
+            android:exported="false"
+            android:label="Health Connect Permissions" />
+
+        <!-- Handle Health Connect permission rationale -->
+        <activity-alias
+            android:name="PermissionsRationaleAlias"
+            android:exported="true"
+            android:targetActivity=".PermissionsRationaleActivity">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity-alias>
     </application>
-
-    <!-- Queries section for Health Connect compatibility -->
-    <queries>
-        <package android:name="com.google.android.apps.healthdata" />
-        <intent>
-            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
-        </intent>
-    </queries>
-
 </manifest>
