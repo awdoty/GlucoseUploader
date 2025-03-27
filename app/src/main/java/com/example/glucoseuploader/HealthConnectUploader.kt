@@ -1,545 +1,148 @@
 package com.example.glucoseuploader
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.changes.Change
-import androidx.health.connect.client.changes.UpsertionChange
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.BloodGlucoseRecord
 import androidx.health.connect.client.records.Record
-import androidx.health.connect.client.records.metadata.DataOrigin
-import androidx.health.connect.client.records.metadata.Metadata
-import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
-import androidx.health.connect.client.request.ReadRecordsRequestUsingIds
-import androidx.health.connect.client.request.ReadRecordsRequestUsingTimeRangeFilter
 import androidx.health.connect.client.time.TimeRangeFilter
-import androidx.health.connect.client.units.BloodGlucose
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
-import java.util.UUID
+import kotlin.reflect.KClass
 
-class HealthConnectUploader(val context: Context) {
+/**
+ * Handles uploading and retrieving glucose data from Health Connect.
+ */
+class HealthConnectUploader(private val context: Context) {
 
-    private val tag = "HealthConnectUploader"
-
-    // Health Connect client
-    val healthConnectClient: HealthConnectClient? by lazy {
-        try {
-            HealthConnectClient.getOrCreate(context)
-        } catch (e: Exception) {
-            Log.e(tag, "Error creating Health Connect client", e)
-            null
-        }
+    companion object {
+        // Define constants that were missing in the original code
+        const val SAMSUNG_HEALTH_APP = "com.samsung.health"
+        const val RECORDING_METHOD_MANUALLY_ENTERED = "manually_entered"
     }
 
-    /**
-     * Check if Health Connect is available on this device
-     */
-    suspend fun isHealthConnectAvailable(): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val status = HealthConnectClient.getSdkStatus(context)
-                Log.d(tag, "Health Connect SDK status: $status")
-                status == HealthConnectClient.SDK_AVAILABLE
-            } catch (e: Exception) {
-                Log.e(tag, "Error checking Health Connect availability", e)
-                false
-            }
-        }
+    private val client: HealthConnectClient by lazy {
+        HealthConnectClient.getOrCreate(context)
     }
 
-    /**
-     * Get the Health Connect version if available
-     */
-    fun getHealthConnectVersion(): String? {
-        return try {
-            val packageInfo = context.packageManager.getPackageInfo(
-                "com.google.android.apps.healthdata", 0)
-            packageInfo.versionName
-        } catch (e: Exception) {
-            null
-        }
+    private val bloodGlucoseRecordHelper by lazy {
+        BloodGlucoseRecordHelper(client)
     }
 
-    /**
-     * Check if we have the necessary permissions
-     */
-    suspend fun hasPermissions(): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val client = healthConnectClient ?: return@withContext false
-                val grantedPermissions = client.permissionController.getGrantedPermissions()
-
-                // Log the permissions for debugging
-                Log.d(tag, "Granted permissions: $grantedPermissions")
-                val requiredPermissions = getRequiredPermissions()
-                Log.d(tag, "Required permissions: $requiredPermissions")
-
-                val hasAll = grantedPermissions.containsAll(requiredPermissions)
-                Log.d(tag, "Has all required permissions: $hasAll")
-
-                hasAll
-            } catch (e: Exception) {
-                Log.e(tag, "Error checking permissions", e)
-                false
-            }
-        }
-    }
+    // Token for tracking changes
+    private var changeToken: String? = null
 
     /**
-     * Get required permissions for blood glucose data
+     * Upload a glucose reading to Health Connect.
      */
-    fun getRequiredPermissions(): Set<String> {
-        val permissions = setOf(
-            HealthPermission.getReadPermission(BloodGlucoseRecord::class),
-            HealthPermission.getWritePermission(BloodGlucoseRecord::class)
-        )
-        Log.d(tag, "Required permissions set: $permissions")
-        return permissions
-    }
-
-    /**
-     * Check if we have history read permission
-     */
-    suspend fun hasHistoryReadPermission(): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val client = healthConnectClient ?: return@withContext false
-                val grantedPermissions = client.permissionController.getGrantedPermissions()
-                val hasHistoryPermission = grantedPermissions.any {
-                    it.toString().contains("READ_HEALTH_DATA_HISTORY")
-                }
-                Log.d(tag, "Has history read permission: $hasHistoryPermission")
-                hasHistoryPermission
-            } catch (e: Exception) {
-                Log.e(tag, "Error checking history read permission", e)
-                false
-            }
-        }
-    }
-
-    /**
-     * Check if background read is available
-     */
-    fun isBackgroundReadAvailable(): Boolean {
-        return true  // Simplified for Android 14+
-    }
-
-    /**
-     * Check if we have background read permission
-     */
-    suspend fun hasBackgroundReadPermission(): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val client = healthConnectClient ?: return@withContext false
-                val grantedPermissions = client.permissionController.getGrantedPermissions()
-                grantedPermissions.any { it.toString().contains("READ_HEALTH_DATA_IN_BACKGROUND") }
-            } catch (e: Exception) {
-                Log.e(tag, "Error checking background read permission", e)
-                false
-            }
-        }
-    }
-
-    /**
-     * Request history read permission
-     */
-    fun requestHistoryReadPermission(activity: ComponentActivity) {
-        try {
-            val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_PERMISSIONS")
-            val historyReadPermission = "android.permission.health.READ_HEALTH_DATA_HISTORY"
-            intent.putExtra("androidx.health.EXTRA_PERMISSIONS", arrayOf(historyReadPermission))
-            activity.startActivity(intent)
-        } catch (e: Exception) {
-            Log.e(tag, "Error requesting history read permission", e)
-            openHealthConnectApp(activity)
-        }
-    }
-
-    /**
-     * Log various information about Health Connect for debugging
-     */
-    suspend fun logHealthConnectInfo() {
-        try {
-            val availability = isHealthConnectAvailable()
-            Log.d(tag, "Health Connect availability: $availability")
-            Log.d(tag, "Health Connect version: ${getHealthConnectVersion()}")
-            if (availability) {
-                val hasPerms = hasPermissions()
-                Log.d(tag, "Has permissions: $hasPerms")
-                Log.d(tag, "Has history read permission: ${hasHistoryReadPermission()}")
-                Log.d(tag, "Has background read permission: ${hasBackgroundReadPermission()}")
-            }
-        } catch (e: Exception) {
-            Log.e(tag, "Error logging Health Connect info", e)
-        }
-    }
-
-    /**
-     * Upload a blood glucose reading
-     */
-    suspend fun uploadBloodGlucose(
-        value: Double,
-        time: Instant,
-        relationToMeal: Int = BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN
+    suspend fun uploadGlucoseRecord(
+        timestamp: Instant,
+        glucoseLevel: Double,
+        mealType: BloodGlucoseRecord.MealType = BloodGlucoseRecord.MealType.UNKNOWN
     ): String {
-        try {
-            val client = healthConnectClient ?: throw Exception("Health Connect not available")
+        val record = bloodGlucoseRecordHelper.createBloodGlucoseRecord(
+            timestamp = timestamp,
+            glucoseLevel = glucoseLevel,
+            mealType = mealType
+        )
 
-            // Create the record with the specified value and time
-            val bloodGlucoseRecord = BloodGlucoseRecord(
-                time = time,
-                zoneOffset = ZoneId.systemDefault().rules.getOffset(time),
-                level = BloodGlucose.milligramsPerDeciliter(value),
-                relationToMeal = relationToMeal,
-                specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD,
-                // Use proper metadata creation for alpha12
-                metadata = createMetadata()
-            )
-
-            // Insert the record
-            val response = client.insertRecords(listOf(bloodGlucoseRecord))
-            return response.recordIdsList.firstOrNull() ?: "Unknown record ID"
-        } catch (e: Exception) {
-            Log.e(tag, "Error uploading glucose reading", e)
-            throw e
-        }
+        return client.insertRecords(listOf(record)).recordIdsList.firstOrNull() ?: ""
     }
 
     /**
-     * Create metadata for manually entered records
+     * Upload a pre-created glucose record.
      */
-    private fun createMetadata(): Metadata {
-        // Create new metadata for alpha12 API
-        return Metadata(
-            clientRecordId = UUID.randomUUID().toString(),
-            clientRecordVersion = 1,
-            dataOrigin = DataOrigin.SAMSUNG_HEALTH_APP, // Set appropriate data origin
-            lastModifiedTime = Instant.now(),
-            recordingMethod = Metadata.RECORDING_METHOD_MANUALLY_ENTERED
+    suspend fun uploadGlucoseRecord(record: BloodGlucoseRecord): String {
+        return client.insertRecords(listOf(record)).recordIdsList.firstOrNull() ?: ""
+    }
+
+    /**
+     * Retrieve glucose readings from a time range.
+     */
+    suspend fun getGlucoseReadings(
+        startTime: Instant,
+        endTime: Instant = Instant.now()
+    ): List<BloodGlucoseRecord> {
+        // Create a time range filter
+        val timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
+
+        // Create a request to read blood glucose records
+        val request = ReadRecordsRequest(
+            recordType = BloodGlucoseRecord::class,
+            timeRangeFilter = timeRangeFilter
+        )
+
+        // Execute the request and return the records
+        return client.readRecords(request).records
+    }
+
+    /**
+     * Delete a glucose record by ID.
+     */
+    suspend fun deleteGlucoseRecord(id: String) {
+        client.deleteRecords(
+            recordType = BloodGlucoseRecord::class,
+            recordIdsList = listOf(id)
         )
     }
 
     /**
-     * Upload a series of blood glucose readings, such as from CSV data
+     * Start tracking changes to glucose data.
      */
-    suspend fun uploadGlucoseSeries(
-        values: List<Double>,
-        startTime: ZonedDateTime,
-        endTime: ZonedDateTime,
-        mealTypes: List<Int> = emptyList(),
-        progressCallback: ((Int, Int) -> Unit)? = null
-    ): Boolean {
+    suspend fun startTrackingChanges(onMessage: (ChangesMessage) -> Unit) {
         try {
-            val client = healthConnectClient ?: throw Exception("Health Connect not available")
-
-            if (!hasPermissions()) {
-                Log.e(tag, "Missing required permissions")
-                return false
+            // Get or create a change token
+            if (changeToken == null) {
+                changeToken = client.getChangesToken(setOf(BloodGlucoseRecord::class))
+                onMessage(ChangesMessage.NewTokenReceived(changeToken!!))
             }
 
-            // Create a list of records to insert
-            val records = mutableListOf<BloodGlucoseRecord>()
+            // Use the token to get changes
+            val changes = client.getChanges(changeToken!!)
 
-            // Calculate time interval between readings
-            val totalReadings = values.size
-            val durationMillis = endTime.toInstant().toEpochMilli() - startTime.toInstant().toEpochMilli()
-            val intervalMillis = if (totalReadings > 1) durationMillis / (totalReadings - 1) else 0
+            // Update the token
+            changeToken = changes.nextChangesToken
+            onMessage(ChangesMessage.NewTokenReceived(changeToken!!))
 
-            // Create records for each value
-            for (i in values.indices) {
-                // Calculate timestamp for this reading
-                val timestamp = if (totalReadings > 1 && i > 0) {
-                    Instant.ofEpochMilli(startTime.toInstant().toEpochMilli() + (i * intervalMillis))
-                } else {
-                    startTime.toInstant()
-                }
+            // Process the changes
+            val recordIds = changes.changes
 
-                // Get meal type if available, otherwise use unknown
-                val mealType = if (i < mealTypes.size) mealTypes[i]
-                else BloodGlucoseRecord.RELATION_TO_MEAL_UNKNOWN
-
-                // Create the record
-                val record = BloodGlucoseRecord(
-                    time = timestamp,
-                    zoneOffset = ZoneId.systemDefault().rules.getOffset(timestamp),
-                    level = BloodGlucose.milligramsPerDeciliter(values[i]),
-                    relationToMeal = mealType,
-                    specimenSource = BloodGlucoseRecord.SPECIMEN_SOURCE_CAPILLARY_BLOOD,
-                    metadata = createMetadata()
+            if (recordIds.isNotEmpty()) {
+                // Create a request to read the changed records
+                val request = ReadRecordsRequest(
+                    recordType = BloodGlucoseRecord::class,
+                    timeRangeFilter = TimeRangeFilter.after(
+                        Instant.now().minus(30, ChronoUnit.DAYS)
+                    )
                 )
-                records.add(record)
+
+                // Read the records
+                val records = client.readRecords(request)
+
+                // Inform about the changes
+                onMessage(ChangesMessage.RecordsUploaded(records.records.size))
             }
-
-            // Insert records in batches to avoid overwhelming Health Connect
-            val batchSize = 50
-            for (i in records.indices step batchSize) {
-                val batch = records.subList(i, minOf(i + batchSize, records.size))
-                val response = client.insertRecords(batch)
-                Log.d(tag, "Batch ${i/batchSize + 1}: Inserted ${response.recordIdsList.size} records")
-
-                // Report progress after each batch
-                progressCallback?.invoke(minOf(i + batchSize, records.size), totalReadings)
-            }
-
-            Log.d(tag, "Uploaded ${records.size} glucose readings")
-            return true
         } catch (e: Exception) {
-            Log.e(tag, "Error uploading glucose series", e)
-            throw e
+            onMessage(ChangesMessage.Error(e.message ?: "Unknown error tracking changes"))
         }
     }
 
     /**
-     * Read blood glucose records
+     * Read records by IDs with proper type handling.
      */
-    suspend fun readBloodGlucoseRecords(startTime: Instant, endTime: Instant): List<BloodGlucoseRecord> {
-        try {
-            val client = healthConnectClient ?: throw Exception("Health Connect not available")
+    private suspend fun <T : Record> readRecordsByIds(
+        recordType: KClass<T>,
+        ids: List<String>
+    ): List<T> {
+        val request = ReadRecordsRequest(
+            recordType = recordType,
+            recordIdsList = ids
+        )
 
-            val request = ReadRecordsRequestUsingTimeRangeFilter(
-                recordType = BloodGlucoseRecord::class,
-                timeRangeFilter = TimeRangeFilter.between(startTime, endTime)
-            )
-
-            val response = client.readRecords(request)
-            return response.records
-        } catch (e: Exception) {
-            Log.e(tag, "Error reading glucose records", e)
-            throw e
-        }
-    }
-
-    /**
-     * Read historical blood glucose records
-     */
-    suspend fun readHistoricalBloodGlucoseRecords(startTime: Instant, endTime: Instant): List<BloodGlucoseRecord> {
-        return readBloodGlucoseRecords(startTime, endTime)
-    }
-
-    /**
-     * Read the latest blood glucose record
-     */
-    suspend fun readLatestBloodGlucoseRecord(): BloodGlucoseRecord? {
-        try {
-            val endTime = Instant.now()
-            val startTime = endTime.minus(30, ChronoUnit.DAYS)
-
-            val records = readBloodGlucoseRecords(startTime, endTime)
-            return records.maxByOrNull { it.time }
-        } catch (e: Exception) {
-            Log.e(tag, "Error reading latest glucose record", e)
-            return null
-        }
-    }
-
-    /**
-     * Get statistics for glucose readings for the specified day
-     */
-    suspend fun getDayGlucoseStatistics(date: LocalDate): GlucoseStatistics {
-        try {
-            val zoneId = ZoneId.systemDefault()
-            val startTime = date.atStartOfDay(zoneId).toInstant()
-            val endTime = date.plusDays(1).atStartOfDay(zoneId).toInstant()
-
-            val records = readBloodGlucoseRecords(startTime, endTime)
-            val values = records.map { it.level.inMilligramsPerDeciliter }
-
-            return GlucoseStatistics(
-                averageGlucose = values.average().takeIf { !it.isNaN() },
-                minimumGlucose = values.minOrNull(),
-                maximumGlucose = values.maxOrNull(),
-                readingCount = records.size.toLong(),
-                period = date.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"))
-            )
-        } catch (e: Exception) {
-            Log.e(tag, "Error getting day statistics", e)
-            return GlucoseStatistics(
-                averageGlucose = null,
-                minimumGlucose = null,
-                maximumGlucose = null,
-                readingCount = 0L,
-                period = date.format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"))
-            )
-        }
-    }
-
-    /**
-     * Get glucose statistics for different periods
-     */
-    suspend fun getAllGlucoseStatistics(): List<GlucoseStatistics> {
-        try {
-            val endTime = Instant.now()
-
-            // Last 24 hours
-            val day1Stats = getDayGlucoseStatistics(
-                LocalDate.now(ZoneId.systemDefault())
-            )
-
-            // Last 7 days
-            val week1Start = endTime.minus(7, ChronoUnit.DAYS)
-            val weekRecords = readBloodGlucoseRecords(week1Start, endTime)
-            val weekValues = weekRecords.map { it.level.inMilligramsPerDeciliter }
-            val week1Stats = GlucoseStatistics(
-                averageGlucose = weekValues.average().takeIf { !it.isNaN() },
-                minimumGlucose = weekValues.minOrNull(),
-                maximumGlucose = weekValues.maxOrNull(),
-                readingCount = weekRecords.size.toLong(),
-                period = "Last 7 Days"
-            )
-
-            // Last 30 days
-            val month1Start = endTime.minus(30, ChronoUnit.DAYS)
-            val monthRecords = readBloodGlucoseRecords(month1Start, endTime)
-            val monthValues = monthRecords.map { it.level.inMilligramsPerDeciliter }
-            val month1Stats = GlucoseStatistics(
-                averageGlucose = monthValues.average().takeIf { !it.isNaN() },
-                minimumGlucose = monthValues.minOrNull(),
-                maximumGlucose = monthValues.maxOrNull(),
-                readingCount = monthRecords.size.toLong(),
-                period = "Last 30 Days"
-            )
-
-            return listOf(day1Stats, week1Stats, month1Stats)
-        } catch (e: Exception) {
-            Log.e(tag, "Error getting glucose statistics", e)
-            throw e
-        }
-    }
-
-    /**
-     * Get a token for tracking changes to blood glucose data
-     */
-    suspend fun getGlucoseChangesToken(): String {
-        return try {
-            val client = healthConnectClient ?: throw Exception("Health Connect not available")
-
-            // Request a token for tracking glucose changes
-            val request = ChangesTokenRequest(
-                recordTypes = setOf(BloodGlucoseRecord::class)
-            )
-
-            client.getChangesToken(request)
-        } catch (e: Exception) {
-            Log.e(tag, "Failed to get changes token", e)
-            throw e
-        }
-    }
-
-    /**
-     * Get changes for glucose data since the given token
-     */
-    fun getGlucoseChanges(token: String): Flow<ChangesMessage> = flow {
-        try {
-            val client = healthConnectClient ?: throw Exception("Health Connect not available")
-
-            var nextChangesToken = token
-            do {
-                val response = client.getChanges(nextChangesToken)
-                if (response.changesTokenExpired) {
-                    throw Exception("Changes token has expired")
-                }
-                emit(ChangesMessage.ChangeList(response.changes))
-                nextChangesToken = response.nextChangesToken
-            } while (response.hasMore)
-            emit(ChangesMessage.NoMoreChanges(nextChangesToken))
-        } catch (e: Exception) {
-            Log.e(tag, "Error getting changes", e)
-            throw e
-        }
-    }
-
-    /**
-     * Process glucose changes into readable messages
-     */
-    fun processGlucoseChanges(changes: List<Change>): List<String> {
-        val messages = mutableListOf<String>()
-
-        for (change in changes) {
-            when (change) {
-                is UpsertionChange -> {
-                    if (change.record is BloodGlucoseRecord) {
-                        val record = change.record as BloodGlucoseRecord
-                        messages.add("New glucose reading: ${record.level.inMilligramsPerDeciliter} mg/dL at ${formatTimestamp(record.time)}")
-                    }
-                }
-                // Handle other change types
-                else -> {
-                    messages.add("Unknown change type: ${change::class.java.simpleName}")
-                }
-            }
-        }
-
-        return if (messages.isEmpty()) {
-            listOf("No changes detected in glucose data")
-        } else {
-            messages
-        }
-    }
-
-    /**
-     * Open Health Connect app or send to Play Store if not installed
-     */
-    fun openHealthConnectApp(activityContext: Context = context) {
-        try {
-            val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS")
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            activityContext.startActivity(intent)
-        } catch (e: Exception) {
-            Log.e(tag, "Error opening Health Connect, trying Play Store", e)
-            try {
-                val playStoreIntent = Intent(Intent.ACTION_VIEW).apply {
-                    data = Uri.parse("market://details?id=com.google.android.apps.healthdata")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(playStoreIntent)
-            } catch (e2: Exception) {
-                Log.e(tag, "Failed to open Play Store", e2)
-            }
-        }
-    }
-
-    /**
-     * Revoke all Health Connect permissions
-     */
-    suspend fun revokeAllPermissions() {
-        try {
-            healthConnectClient?.permissionController?.revokeAllPermissions()
-            Log.d(tag, "All Health Connect permissions revoked")
-        } catch (e: Exception) {
-            Log.e(tag, "Error revoking all permissions", e)
-        }
-    }
-
-    /**
-     * Format a timestamp as a readable string
-     */
-    private fun formatTimestamp(timestamp: Instant): String {
-        return try {
-            timestamp.atZone(ZoneId.systemDefault())
-                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-        } catch (e: Exception) {
-            timestamp.toString()
-        }
-    }
-
-    /**
-     * Message types for changes API
-     */
-    sealed class ChangesMessage {
-        data class ChangeList(val changes: List<Change>) : ChangesMessage()
-        data class NoMoreChanges(val nextChangesToken: String) : ChangesMessage()
+        return client.readRecords(request).records
     }
 }
